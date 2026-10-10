@@ -3,6 +3,7 @@
 Purpose: Build a fast, phone-friendly collaborative operational board for a high-volume dog daycare (~100 dogs/day).
 
 - Product behaviour and non-goals: `docs/PRODUCT.md`. Read when deciding UX or product behaviour.
+- Approved operational workflow and GUI requirements: `docs/WORKFLOW.md`. This supersedes historical layout, planning and attendance descriptions in PRODUCT.md and ROADMAP.md.
 - Build milestones and acceptance criteria: `docs/ROADMAP.md`. Read for new features.
 - Current implemented state and next task: `docs/STATUS.md`. Read at the start of substantive new work; keep concise and factual.
 - Make the smallest tested change that achieves the current task. Inspect relevant code before editing. Do not rearchitect unrelated areas.

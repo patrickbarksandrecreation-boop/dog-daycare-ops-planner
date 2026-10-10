@@ -1,16 +1,59 @@
-# Verified project status
+# Implementation status
 
-- Last verified: 2026-10-10. M0/M1 accepted as the base. M2 deployment-ready implementation is on `feat/m2-pwa-deployment`, pending review and authorised hosting. No deployment performed and no verified hosted URL exists.
-- Foundation: Vite / React / TypeScript, npm lockfile, development/build/lint/typecheck/test commands. No environment variables or services required. Planning docs moved into `docs/` to match existing instructions.
-- Board: 100 deterministic fictional dogs; searchable catalog; today's selected dogs; three editable group headings; group counts; selected-group/all-selected/unassigned rosters and search. One authoritative placement per selected dog; idempotent adds and tap/click moves. Desktop three-column layout; phone views with sticky navigation and touch-sized action menus.
-- Demo boundaries: prominent DEMO / NOT LIVE and local-only labels. State is in memory in the current tab; reload resets selections and headings as explained in the UI. No dog-data persistence, backend, real records, booking API, incident logging, AI recommendations, staff accounts, or shared state.
-- Passed: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` (7 tests), `npm run build`. Unit checks cover fixture uniqueness, duplicate adds, moves, unassigned dogs, counts, and roster searching. Verified with Node 24.19.0 and npm 11.9.0.
-- Browser evidence: Chromium via external Playwright at 390×844 (touch emulation) and 1440×1000, against both Vite development and production preview. Passed add/move, heading edit, counts, catalog/roster search, offline interaction after loading, cancel/focus restoration, reload reset, desktop panel order, and horizontal overflow checks. No browser page errors in those runs. Additional phone check added all 100 dogs through the UI and confirmed totals 34/33/33, all-selected roster, final-dog search, maximum-length heading wrapping, sticky navigation, and Escape dismissal. A long-heading dialog overflow found during verification was fixed and its checks passed on rerun.
-- Screenshots: [desktop roster](evidence/desktop-roster.png), [phone board](evidence/mobile-board.png), [phone action menu](evidence/mobile-menu.png).
-- M2: production-only PWA manifest with root identity/scope, standalone display, DEMO naming, original SVG and 192/512px PNG icons, maskable icon and 180px Apple touch icon. Build-time Workbox precaches only app assets. Device-only app caching is labelled; dog state remains unsaved. Updates wait for explicit reload/reset or closing all tabs; another tab's board is not automatically reloaded. Netlify build, Node version, SPA fallback and cache headers are configured. README includes browser-first Android/iPhone guidance and four manual deployment steps.
-- M2 verification: production build, lint, typecheck and all 7 existing unit tests passed. `npm run test:pwa` passed using real production builds in Chromium at 390×844 and 1440×1000: manifest and icon dimensions, offline deep-link/open/reload, expected board reset, two-version update prompt, explicit update, preservation of a second tab's selected dog, obsolete-cache cleanup, and offline launch of the updated version. No page errors in the monitored mobile/update runs. PWA browser regression tooling is now a development dependency and repository script.
-- Not verified: physical Android/iPhone, Safari/Firefox, home-screen installation on devices, a deployed HTTPS URL, or actual Netlify CDN headers. Browser emulation and local HTTP/localhost service-worker tests do not establish hosted-phone acceptance. Existing screenshots show M1; they are not evidence of hosted M2. Optional drag/drop remains absent; every board action supports tap/click.
-- Next slice: review this M2 change, authorise deployment, then verify the exact HTTPS URL and optional home-screen opening on physical Android/iPhone. M2's hosted-phone acceptance remains pending; no M3 integrations are included.
-- Deployment preparation recheck (2026-10-10): clean dependency installation, lint, TypeScript, all 7 unit tests, production build and PWA suite passed again. Added reproducible 360px/390px touch add/move/search/count checks; no horizontal overflow, missing assets or page errors in those runs. Existing 1440px desktop and offline/update checks passed. No app redesign or new dependencies were needed.
-- Repository review: obvious-secret pattern scan found no matches in the files prepared for commit. Dependency/build outputs are excluded; `.netlify/` and environment-file variants are now ignored. Original icon exports and review screenshots are intentional assets. Prior uncommitted M0–M2 work is included intact in the development-branch delivery.
-- Access limits: native Git read access verified; GitHub REST and GraphQL calls returned `Forbidden`, preventing PR creation through the available API. No Netlify connector, CLI login, token, or linked site metadata is available here; existing Netlify projects and hosted configuration cannot be verified. No public deployment or merge was initiated. README gives the remaining manual hosting steps, including reusing an existing project.
+Verified 10 October 2026. [WORKFLOW.md](WORKFLOW.md) is the approved operational source of truth; [layout-reference.png](layout-reference.png) preserves the supplied sketch.
+
+## Completed
+
+- Compact top Unassigned strip, unassigned-only search, separate master database search and visible New Dog.
+- Three tall desktop groups with two-column card grids; data-driven four-column fixture.
+- Expected dogs can be grouped before arrival. Card Arrive confirms physical receipt independently of group assignment.
+- Present/Planned group totals and day-wide Expected/Present/Departed totals derive from daily records.
+- Departure removes the active card and retains identity, last group and timestamps in Day records. Undo departure corrects a mistake. Received/departed rows survive removal/clear actions.
+- Drag between all active locations, grid reordering, click/tap/keyboard selection and destination actions, Escape/reselect cancellation, selection/drop highlights.
+- Right-click, double-click, information button and stationary touch hold open dog details. Movement/scroll cancels hold; the grip never opens the hold popup.
+- Deterministic fictional pair rules with amber planned conflicts and red present-together conflicts. Composition/attendance changes recalculate them.
+- Duplicate booking prevention includes departed dogs; quick creation flags matching master names and requires explicit acknowledgement.
+- Existing dog editing/photos/archive, group rename/defaults, saved dates, access rules and offline write gating retained.
+- Additive migration 002 adds only related attendance fields/RPC and fourth-group capacity. Original schema migration is unchanged. Existing placements are preserved; no cloud migration has been applied.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| TypeScript | Passed |
+| Vite production build | Passed |
+| Model/workflow tests | 6 passed |
+| PostgreSQL/RLS tests | 14 passed |
+| Existing-data migration test | 1 passed |
+| Chromium browser workflows | 11 passed |
+| Production PWA shell / offline reload | Passed |
+| Desktop density, 1920×1080 | **72 fully visible group cards**, 100% zoom, 13px names, no horizontal overflow |
+| 390×844 mobile browser | Tap moves, touch hold, hold cancellation on movement, touch grip drag, destination tabs and no horizontal overflow passed |
+
+Total: **32 automated tests**, plus production build/type-check and standalone PWA verification. Database tests execute PostgreSQL using PGlite with Supabase service stubs. Browser tests use fictional in-memory data. Neither proves live Supabase behaviour.
+
+The browser tests caught and fixed a settling drag overlay intercepting a subsequent drag. The overlay is now non-interactive. Decorative initials are hidden from accessible names. Screenshots were inspected after test completion.
+
+## Screenshots and preview
+
+- [Desktop 1920×1080](screenshots/desktop-1920.png)
+- [Mobile 390×844](screenshots/mobile-390.png)
+- Local preview: `http://127.0.0.1:5173/`. Choose **Planned day** before Explore the demo for the density example; choose Morning for all 100 bookings initially unassigned.
+
+## Remaining limitations
+
+- Supabase project, credentials and staff accounts are not configured. Actual hosted Auth, Storage and multi-device Realtime—including live arrival/departure synchronisation—remain unverified. The opt-in live test was updated and syntax-checked, not executed.
+- Touch was verified with real Chromium touch events under device emulation. Physical Android hardware and installed-PWA behaviour still need acceptance testing.
+- Behavioural notes and rules are fictional demo fixtures only. Cloud boards explicitly show that rules are not configured. Production rule storage/editing is deferred.
+- Bookings are manual or fictional fixtures. No Petboost or external booking integration.
+- The status row retains first arrival and most recent departure, not an event-by-event audit.
+- The interface and schema support a fourth configured group, but adding/removing group configurations through a manager screen is future work.
+- Demo data resets on refresh. Real persistence requires applying migrations 001 and 002 to Supabase.
+
+## Repository and release
+
+Local development branch: `codex/dense-planning-attendance`.
+
+The original local project had no AGENTS.md or commits. The user subsequently supplied the GitHub repository and author identity. Its existing main history is retained as the parent of this implementation, and its AGENTS.md, historical documentation, evidence and hosting configuration are preserved. WORKFLOW.md takes precedence over historical product and roadmap descriptions. The implementation is prepared on the development branch for GitHub review; main remains unchanged.
+
+No merge, publication or production deployment was performed.

@@ -1,8 +1,9 @@
 node_modules/
 dist/
-*.tsbuildinfo
 .env
-.env.local
 .env.*
 !.env.example
-.netlify/
+test-results/
+playwright-report/
+*.log
+*.tsbuildinfo

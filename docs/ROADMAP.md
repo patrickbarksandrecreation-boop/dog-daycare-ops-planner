@@ -1,5 +1,7 @@
 # Roadmap and acceptance contracts (v0.1)
 
+> Historical milestone plan. [WORKFLOW.md](WORKFLOW.md) is the current operational and GUI source of truth; [STATUS.md](STATUS.md) records implemented functionality and verified limitations. The old panel layout and anonymous-session proposal below do not override the approved workflow or existing staff authentication.
+
 ## M0: Repository foundation
 Create Vite + React + TypeScript app, lean docs, lint/typecheck/test commands, `.env.example` if needed. No external services or real data.
 **Pass**: clean install/build; tests runnable; next task explicit.

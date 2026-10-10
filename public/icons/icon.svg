@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#173d35"/>
+  <g fill="#eedb83">
+    <ellipse cx="174" cy="198" rx="28" ry="39" transform="rotate(-25 174 198)"/>
+    <ellipse cx="229" cy="160" rx="27" ry="37"/>
+    <ellipse cx="289" cy="160" rx="27" ry="37"/>
+    <ellipse cx="342" cy="198" rx="28" ry="39" transform="rotate(25 342 198)"/>
+    <path d="M256 219c-35 0-43 29-62 47-40 39-11 72 22 61 27-10 53-10 80 0 33 11 62-22 22-61-19-18-27-47-62-47Z"/>
+  </g>
+  <text x="256" y="379" text-anchor="middle" fill="#fff" font-family="sans-serif" font-weight="bold" font-size="42">DEMO</text>
+</svg>

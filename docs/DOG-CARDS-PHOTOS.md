@@ -15,7 +15,7 @@ Breed is optional free text (160 characters), never inferred. Staff can supply i
 3. Deploy `supabase/functions/replace-dog-photo` with JWT verification enabled (see config.toml). It uses the existing server-provided `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Never put the service key in frontend variables. The function additionally calls Auth `getUser` and checks current database membership through the service-only RPCs.
 4. Verify on synthetic records using two enrolled staff sessions: replacement, refresh/realtime propagation, simultaneous stale replacements, failed upload, private download and denied unrelated edits. Then approve merge/frontend publication. An older frontend cannot replace existing photos after the new policy is applied; coordinate this short release window.
 
-Cloud migration and Edge deployment are complete. Existing cloud migration versions differ from local filenames; do not use an indiscriminate migration push. Frontend publication follows the approved PR #5 merge through the existing Netlify integration.
+Cloud migration and Edge deployment are complete. [PR #5](https://github.com/patrickbarksandrecreation-boop/dog-daycare-ops-planner/pull/5) merged as `e84b601`; Netlify published the configured frontend at https://dog-daycare-ops-planner.netlify.app/. The full two-staff hosted acceptance test also passed on that production origin with synthetic dog `03bee181-c3ec-4407-a306-8a83f5205ec6`. Existing cloud migration versions differ from local filenames; do not use an indiscriminate migration push.
 
 ## Storage and permission design
 

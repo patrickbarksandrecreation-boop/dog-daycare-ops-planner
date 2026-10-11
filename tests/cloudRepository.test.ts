@@ -52,4 +52,3 @@ it('reports subscription readiness once without issuing a second duplicate chang
   const f=fixture(),changed=vi.fn(),status=vi.fn();const stop=f.repo.watch('2026-01-01',changed,status);
   f.callback('SUBSCRIBED');expect(status).toHaveBeenCalledWith('online');expect(changed).not.toHaveBeenCalled();stop();
 });
-

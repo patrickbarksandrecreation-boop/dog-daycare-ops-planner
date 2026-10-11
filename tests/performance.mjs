@@ -29,4 +29,3 @@ try {
  },testDate);
  console.log(JSON.stringify(result));await mkdir('test-results',{recursive:true});await writeFile('test-results/performance-results.json',JSON.stringify(result,null,2));
 } finally {await browser.close();}
-

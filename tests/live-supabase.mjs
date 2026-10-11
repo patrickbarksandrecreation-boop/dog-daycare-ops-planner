@@ -23,9 +23,10 @@ const dog=crypto.randomUUID();
 const dogName=`Test pup ${dog.slice(0,8)}`;
 try {
   assert.ok((await anonymous.rpc('planning_snapshot',{p_date:date})).error,'Anonymous snapshot must fail');
-  assert.ok((await staff.rpc('save_dog',{p_id:dog,p_name:dogName,p_photo:null,p_archived:false})).error,'Staff dog editing must fail');
+  // Staff creation is covered by the two-session anonymous harness; existing edits stay denied.
   assert.ok((await staff.from('staff_profiles').update({role:'manager'}).neq('id',crypto.randomUUID())).error,'Role escalation must fail');
   await rpc(manager,'save_dog',{p_id:dog,p_name:dogName,p_photo:null,p_archived:false});
+  assert.ok((await staff.rpc('save_dog',{p_id:dog,p_name:'Denied edit',p_photo:null,p_archived:false})).error,'Staff dog editing must fail');
   let received=0;
   await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>reject(new Error('Realtime subscription timed out')),15000);

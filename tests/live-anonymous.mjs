@@ -1,7 +1,9 @@
 // Opt-in: creates two synthetic anonymous users and retains their test attendance history.
 import assert from 'node:assert/strict';
-import { chromium } from '@playwright/test';
+import { chromium, expect as playwrightExpect } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 import { createClient } from '@supabase/supabase-js';
+const expect=playwrightExpect.configure({timeout:30000});
 const env=process.env;
 assert.equal(env.LIVE_TEST_CONFIRM,'synthetic-pilot');
 const url=env.VITE_SUPABASE_URL,key=env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -30,7 +32,63 @@ try {
   const rpc=async(db,name,args)=>{const r=await db.rpc(name,args);if(r.error)throw new Error(r.error.message);return r.data;};
   const snapshot=db=>rpc(db,'planning_snapshot',{p_date:date});
   const [a,b]=clients; let state=await snapshot(a); assert.equal(state.assignments.length,0,'Use an empty test date');
-  assert.ok(state.dogs.length>0); const dog=state.dogs[0],day=state.day.id;
+  const names=[1,2].map(i=>`Synthetic staff creation ${date} ${i} ${crypto.randomUUID().slice(0,8)}`);
+  const created=[];
+  for(let i=0;i<2;i++){
+    const page=pages[i];
+    const profile=await clients[i].from('staff_profiles').select('role').single();
+    assert.equal(profile.error,null); assert.equal(profile.data.role,'staff');
+    await page.getByRole('button',{name:'New Dog',exact:true}).click();
+    // Duplicate-name acknowledgement must work for ordinary staff too.
+    await page.getByLabel('Dog’s name').fill(state.dogs[0].name);
+    await expect(page.getByRole('button',{name:'Save dog',exact:true})).toBeDisabled();
+    await page.getByLabel('This is a different dog with the same name').check();
+    await expect(page.getByRole('button',{name:'Save dog',exact:true})).toBeEnabled();
+    await page.getByLabel('Dog’s name').fill(names[i]);
+    if(i===0) await page.getByLabel('Photo (optional)').setInputFiles('public/icon-192.png');
+    await page.getByRole('button',{name:'Save dog',exact:true}).click();
+    await expect(page.getByRole('dialog')).toHaveAccessibleName('Dog database');
+    await expect(page.locator('.database-row')).toContainText(names[i]);
+    assert.equal((await snapshot(clients[i])).assignments.length,0,'Creation must not book or mark arrival');
+    await expect(page.getByRole('button',{name:`Edit ${names[i]}`,exact:true})).toHaveCount(0);
+    await page.getByRole('button',{name:'Close dialog',exact:true}).click();
+    const peer=pages[1-i];
+    await peer.getByRole('button',{name:'Dog database',exact:true}).click();
+    await peer.getByLabel('Search dog database').fill(names[i]);
+    await expect(peer.locator('.database-row')).toContainText(names[i],{timeout:30000});
+    await peer.getByRole('button',{name:'Close dialog',exact:true}).click();
+    const saved=(await snapshot(clients[i])).dogs.find(d=>d.name===names[i]);
+    assert.ok(saved); created.push(saved);
+  }
+  for(const page of pages){
+    await page.reload(); await page.locator('.connection.online').waitFor({timeout:30000});
+    assert.equal(await page.getByLabel('Display name',{exact:true}).count(),0);
+    await page.getByLabel('Planning date',{exact:true}).fill(date);
+    for(const name of names){
+      await page.getByRole('button',{name:'Dog database',exact:true}).click();
+      await page.getByLabel('Search dog database').fill(name);
+      await expect(page.locator('.database-row')).toContainText(name);
+      if(name===names[0]){
+        const image=page.locator('.database-row img');
+        await expect(image).toBeVisible();
+        await expect.poll(()=>image.evaluate(img=>img.complete && img.naturalWidth>0)).toBe(true);
+      }
+      await page.getByRole('button',{name:'Close dialog',exact:true}).click();
+    }
+  }
+  const dog=created[0],day=state.day.id;
+  assert.ok((await b.rpc('save_dog',{p_id:dog.id,p_name:'Denied edit',p_photo:null,p_archived:false})).error);
+  assert.ok((await a.rpc('save_dog',{p_id:dog.id,p_name:dog.name,p_photo:dog.photo_path,p_archived:true})).error);
+  assert.ok((await b.rpc('clear_plan',{p_day:day,p_revision:state.day.revision})).error);
+  assert.ok((await b.rpc('rename_group',{p_day:day,p_group:state.groups[0].group_id,p_name:'Denied',p_default:false})).error);
+  const deniedUpload=await b.storage.from('dog-photos').upload(`${state.day.workspace_id}/${dog.id}/denied.png`,await readFile('public/icon-192.png'),{contentType:'image/png'});
+  assert.ok(deniedUpload.error,'Staff may not upload to existing dogs');
+  const visitor=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+  assert.ok((await visitor.storage.from('dog-photos').createSignedUrl(dog.photo_path,60)).error);
+  const signed=await b.storage.from('dog-photos').createSignedUrl(dog.photo_path,60);
+  assert.equal(signed.error,null);
+  assert.equal((await fetch(signed.data.signedUrl)).status,200);
+  console.log('PASS: both staff created dogs, duplicate acknowledgement, separate booking, synchronized visibility and refresh, private photo reads, denied existing-profile edits/archive/uploads/rename/clear.');
   await rpc(a,'add_to_plan',{p_day:day,p_dog:dog.id});
   for(const page of pages) await page.getByTestId(`card-${dog.name}`).waitFor({timeout:15000});
   state=await snapshot(a);const placement=state.assignments[0];

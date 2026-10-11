@@ -193,7 +193,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <Unassigned count={totals.unassigned} search={search} setSearch={setSearch} selected={!!selection && editable}
           move={() => { if (selection) void move(selection, null); }}
           tools={<><button onClick={() => setDatabase(true)}><Database size={16}/>Dog database</button>
-            {manager && <button className="primary" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/>New Dog</button>}</>}>
+            <button className="primary" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/>New Dog</button></>}>
           {cards(null)}
         </Unassigned>
         <div className={`selection-bar ${selection ? 'has-selection' : ''}`}>

@@ -4,7 +4,9 @@ import { photoError } from './model';
 import type { Repository } from './repository';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-export const client = url && key && !url.includes('YOUR_PROJECT') ? createClient(url, key) : null;
+export const client = url && key && !url.includes('YOUR_PROJECT') ? createClient(url, key, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+}) : null;
 export function cloudRepository(): Repository {
   const db = client!;
   async function rpc<T = void>(name: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -17,13 +19,17 @@ export function cloudRepository(): Repository {
     async profile() {
       const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error('Please sign in again.');
-      const { data, error } = await db.from('staff_profiles').select('id,display_name,role').eq('id', user.id).single();
+      const { data, error } = await db.from('staff_profiles').select('id,display_name,role,workspace_id').eq('id', user.id).single();
       if (error || !data) throw new Error('Your account needs staff access. Ask your manager to add your staff profile.');
       return data as Profile;
     },
     async snapshot(date) {
       await rpc('ensure_planning_day', { p_date: date });
       const state = await rpc<Snapshot>('planning_snapshot', { p_date: date });
+      if (!('workspace_id' in state.day)) {
+        throw new Error('Apply 003_workspace_history.sql before using the shared pilot.');
+      }
+      if (state.groups.some(g => g.run_version === undefined)) throw new Error('Apply 004_runs_markers.sql before using runs and dog markers.');
       if (state.assignments.some(a => !a.attendance_status)) {
         throw new Error('The attendance migration is required. Apply 002_attendance.sql before using this board.');
       }
@@ -50,6 +56,8 @@ export function cloudRepository(): Repository {
     attendance: (day, assignment, status, version) => rpc('set_attendance', { p_day: day, p_assignment: assignment, p_status: status, p_version: version }),
     rename: (day, group, name, useDefault) => rpc('rename_group', { p_day: day, p_group: group, p_name: name, p_default: useDefault }),
     clear: (day, revision) => rpc('clear_plan', { p_day: day, p_revision: revision }),
+    markers: (dog, groomed, noWaterpark, version) => rpc('set_dog_markers', { p_dog: dog, p_groomed: groomed, p_no_waterpark: noWaterpark, p_version: version }),
+    assignRun: (day, group, run, version) => rpc('set_group_run', { p_day: day, p_group: group, p_run: run, p_version: version }),
     async saveDog(dog, photo) {
       const id = dog.id || crypto.randomUUID();
       let path = dog.photo_path || null;
@@ -57,7 +65,9 @@ export function cloudRepository(): Repository {
         const validation = photoError(photo);
         if (validation) throw new Error(validation);
         const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[photo.type];
-        path = `${id}/${crypto.randomUUID()}.${extension}`;
+        const workspace = await rpc<string>('current_workspace');
+        if (!workspace) throw new Error('Workspace membership is required.');
+        path = `${workspace}/${id}/${crypto.randomUUID()}.${extension}`;
         const { error } = await db.storage.from('dog-photos').upload(path, photo, { upsert: false, contentType: photo.type });
         if (error) throw new Error(error.message);
       }

@@ -13,14 +13,28 @@ function App() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [scenario, setScenario] = useState<DemoScenario>('morning');
+  const [userId, setUserId] = useState<string | null>(null);
   useEffect(() => {
     if (!client) return;
     const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => {
-      setRepo(previous => session ? previous && !previous.demo ? previous : cloudRepository() : null);
-      setChecking(false);
+      setUserId(session?.user.id || null);
+      if (!session) { setRepo(null); setChecking(false); }
     });
     return () => subscription.unsubscribe();
   }, []);
+  useEffect(() => {
+    if (!client || !userId) return;
+    let active = true;
+    setChecking(true);
+    // Perform database work outside the Auth callback to avoid its session lock.
+    void client.from('staff_profiles').select('id').eq('id', userId).maybeSingle().then(({ data, error }) => {
+      if (!active) return;
+      if (error) setError('Unable to check pilot access. Reconnect and try joining again.');
+      if (data) setRepo(previous => previous && !previous.demo ? previous : cloudRepository());
+      setChecking(false);
+    });
+    return () => { active = false; };
+  }, [userId]);
   if (repo) return <Planner repo={repo} onExit={() => setRepo(null)} />;
   return <main className="welcome"><section className="welcome-card">
     <div className="brand"><span className="brand-mark"><PawPrint size={25}/></span>dayboard<span className="brand-dot">.</span></div>
@@ -30,14 +44,23 @@ function App() {
     {checking ? <p role="status">Checking your session…</p> : client ? <form onSubmit={async e => {
       e.preventDefault(); setError(''); setBusy(true);
       const form = new FormData(e.currentTarget);
-      try { const { error } = await client!.auth.signInWithPassword({ email: String(form.get('email')), password: String(form.get('password')) }); if (error) throw error; }
+      try {
+        const name = String(form.get('displayName') || '').trim();
+        if (!name || name.length > 80) throw new Error('Enter a display name (1–80 characters).');
+        if (!userId) {
+          const { error } = await client!.auth.signInAnonymously();
+          if (error) throw error;
+        }
+        const { error } = await client!.rpc('join_synthetic_pilot', { p_display_name: name });
+        if (error) throw error;
+        setRepo(cloudRepository());
+      }
       catch (e) { setError(e instanceof Error ? e.message : 'Unable to sign in.'); }
       finally { setBusy(false); }
     }}>
-      <label>Work email<input name="email" type="email" autoComplete="username" required/></label>
-      <label>Password<input name="password" type="password" autoComplete="current-password" required/></label>
-      <button className="primary full" disabled={busy}>{busy ? 'Signing in…' : 'Sign in to your daycare'}<ArrowRight size={18}/></button>
-      <small>Access is by staff invitation. Ask your manager if you need an account or password reset.</small>
+      <label>Display name<input name="displayName" autoComplete="nickname" maxLength={80} required placeholder="What should we call you?"/></label>
+      <button className="primary full" disabled={busy}>{busy ? 'Joining…' : 'Join the shared pilot'}<ArrowRight size={18}/></button>
+      <small>Synthetic data only. No password or email. This browser remembers your session; a display name does not verify staff identity.</small>
     </form> : <div className="setup-note"><strong>Your workspace is ready to connect.</strong><p>Follow README.md to configure your private Supabase project. Explore planning and arrivals with 100 fictional bookings.</p></div>}
     {error && <p className="error" role="alert">{error}</p>}
     <label className="demo-scenario">Demo scenario<select aria-label="Demo scenario" value={scenario} onChange={e => setScenario(e.target.value as DemoScenario)}><option value="morning">Morning · 100 Expected, unassigned</option><option value="planned">Planned day · 3 groups + arrivals</option><option value="four">Future layout · 4 groups</option></select></label>

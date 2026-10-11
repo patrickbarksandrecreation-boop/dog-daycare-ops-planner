@@ -1,5 +1,9 @@
 # Workflow verification
 
+Runs/markers update: **35 model/database tests + 13 browser tests passed (48 total)**; TypeScript/build also passed. `tests/runs.test.ts` and the migration 004 section of `workspace.test.ts` cover persistence, warning lifecycle, staff access, invalid runs, stale versions and tenant isolation. Browser tests cover both markers, warning details, run changes/clearing and the mobile database shortcut. The optional hosted test requires migrations through 004; it has not been executed against a cloud project.
+
+M3 adds 11 repeatable tests in `tests/workspace.test.ts`, covering upgrade preservation, workspace isolation, cross-workspace RPC denial, stale competing moves, transactional rollback, attendance history, append-only restrictions, composite constraints, scoped photos, unregistered sessions, staff permissions, retained removal history and fictional seeding. Current results: **32 model/database tests and 11 browser tests passed**, plus TypeScript and production build. See [M3-PERSISTENCE.md](M3-PERSISTENCE.md) for the security contract and limits of the serialized PGlite environment.
+
 The authoritative requirements are in [WORKFLOW.md](WORKFLOW.md), with executed results in [STATUS.md](STATUS.md).
 
 ## Automated local checks
@@ -13,7 +17,7 @@ pnpm test:e2e
 pnpm test:pwa
 ```
 
-The 21 model/database tests cover Brisbane dates, morning bookings, separate master records, idempotent booking, independent attendance, group counts, planned/present conflicts, received/departed history protection, four-group data, duplicate-name checks, stale edits, permission restrictions and preservation of a pre-existing record through migration 002.
+The original 21 model/database tests cover Brisbane dates, morning bookings, separate master records, idempotent booking, independent attendance, group counts, planned/present conflicts, received/departed history protection, four-group data, duplicate-name checks, stale edits, permission restrictions and preservation of a pre-existing record through migration 002.
 
 PGlite executes the actual SQL migrations/functions/constraints/RLS, stubbing the Supabase Auth/Storage service tables and auth.uid(). The Realtime publication statement is omitted because PGlite has no replication process. These tests are not a substitute for hosted Auth, Storage HTTP requests or real concurrent connections.
 
@@ -35,9 +39,13 @@ Tests use the explicit in-memory repository. They do not prove cloud persistence
 
 Playwright starts a local Vite server if needed. Failure screenshots/traces are in ignored test-results/. Desktop and mobile verification screenshots are written to docs/screenshots/.
 
-## Live Supabase acceptance — not yet run
+## Anonymous live acceptance
 
-Use a disposable project with migrations **001 and 002**, one existing manager account, a separate staff account, and an empty dedicated test date. Configure the app against the same project and start it. Supply these only to the test process through your terminal or secret manager; never use VITE variables for account credentials or commit them:
+The approved flow uses `pnpm test:live` with the variables and unused synthetic date described in [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md). Current results are in STATUS.md. It retains fictional attendance and audit history.
+
+## Legacy password-account acceptance — not yet run
+
+Use a disposable project with migrations **001, 002 and 003**, one existing manager account, a separate staff account, and an empty dedicated test date. Configure the app against the same project and start it. Supply these only to the test process through your terminal or secret manager; never use VITE variables for account credentials or commit them:
 
 ```text
 LIVE_TEST_CONFIRM=disposable-project
@@ -51,13 +59,13 @@ TEST_PLAN_DATE=an unused date, YYYY-MM-DD
 TEST_APP_URL=http://127.0.0.1:5173
 ```
 
-Run `pnpm test:live`. The script uses two independent authenticated browser contexts and API/Realtime clients. It checks anonymous denial, staff/manager restrictions, booking convergence, concurrent same-dog moves, refresh persistence, loss/recovery of connectivity, arrival convergence, regrouping without arrival reset, departure retention/no active card, duplicate prevention for departed records, and private photo access.
+Run `pnpm test:live:password` for the legacy password-account harness. The script uses two independent authenticated browser contexts and API/Realtime clients. It checks anonymous denial, staff/manager restrictions, booking convergence, concurrent same-dog moves, refresh persistence, loss/recovery of connectivity, arrival convergence, regrouping without arrival reset, departure retention/no active card, duplicate prevention for departed records, and private photo access.
 
 It creates one uniquely named fictional dog. Cleanup removes its booking only if still Expected; received/departed records are retained and the master dog is archived. A used test date therefore remains occupied after a successful run; choose a new empty date next time. No broad clear or service-role key is used. Failures can leave test records/photos, and an interrupted network request may still have committed.
 
 ## Release checks that require the configured environment
 
-- [ ] Execute the live script successfully after applying 002; verify it preserves a copy of existing saved data.
+- [ ] Execute the live script successfully after applying 003; verify it preserves a copy of existing saved data.
 - [ ] Use two physical devices to book different dogs simultaneously and move/receive the same dog simultaneously. Confirm one valid record, preserved unrelated edits, and explicit conflicts.
 - [ ] Verify live arrival/departure, counts, and reload/date restoration across staff sessions.
 - [ ] Verify private photo uploads/replacements, allowed types/size, signed URLs and manager restrictions.
@@ -66,4 +74,4 @@ It creates one uniquely named fictional dog. Cleanup removes its booking only if
 - [ ] Use realistic long names, dog volumes and operational group sizes; evaluate legibility at the workplace's real monitor settings.
 - [ ] Validate production behavioural rules with the Behavioural Manager before enabling anything beyond the fictional demo fixture.
 
-No cloud project provisioning, live migration, merge or deployment was performed.
+See STATUS.md for current cloud and deployment evidence.

@@ -1,5 +1,6 @@
 -- OPTIONAL: FICTIONAL DEMONSTRATION DATA ONLY. Run in a test project, never required in production.
-insert into public.dogs(id,name) values
+insert into public.dogs(workspace_id,id,name)
+select '00000000-0000-4000-8000-000000000001'::uuid,id::uuid,name from (values
 ('d0000000-0000-4000-8000-000000000001','Alfie'),
 ('d0000000-0000-4000-8000-000000000002','Archie'),
 ('d0000000-0000-4000-8000-000000000003','Bailey'),
@@ -19,4 +20,4 @@ insert into public.dogs(id,name) values
 ('d0000000-0000-4000-8000-000000000017','Poppy'),
 ('d0000000-0000-4000-8000-000000000018','Rosie'),
 ('d0000000-0000-4000-8000-000000000019','Teddy'),
-('d0000000-0000-4000-8000-000000000020','Winston') on conflict(id) do nothing;
+('d0000000-0000-4000-8000-000000000020','Winston')) as fictional(id,name) on conflict(id) do nothing;

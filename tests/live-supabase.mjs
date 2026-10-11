@@ -38,10 +38,12 @@ try {
   const contexts=await Promise.all([browser.newContext(),browser.newContext()]);
   const pages=await Promise.all(contexts.map(c=>c.newPage()));
   for(let i=0;i<pages.length;i++){
+    // Provisioned-account coverage restores the API session; public onboarding is anonymous.
+    const {data:{session}}=await clients[i].auth.getSession();
+    assert.ok(session);
+    const storageKey=`sb-${new URL(env.TEST_SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+    await contexts[i].addInitScript(({key,session})=>localStorage.setItem(key,JSON.stringify(session)),{key:storageKey,session});
     const page=pages[i]; await page.goto(env.TEST_APP_URL);
-    await page.getByLabel('Work email').fill(i===0?env.TEST_MANAGER_EMAIL:env.TEST_STAFF_EMAIL);
-    await page.getByLabel('Password',{exact:true}).fill(i===0?env.TEST_MANAGER_PASSWORD:env.TEST_STAFF_PASSWORD);
-    await page.getByRole('button',{name:'Sign in to your daycare'}).click();
     await page.locator('.connection.online').waitFor();
     await page.getByLabel('Planning date').fill(date);
     await page.locator('.connection.online').waitFor();
@@ -54,7 +56,7 @@ try {
   const state=await snapshot(staff); const a=state.assignments.find(a=>a.dog_id===dog);
   const results=await Promise.all([manager,staff].map((db,i)=>db.rpc('move_assignment',{p_day:day,p_assignment:a.id,p_group:state.groups[i].group_id,p_before:null,p_version:a.version})));
   assert.equal(results.filter(r=>!r.error).length,1,'Exactly one concurrent move succeeds');
-  assert.equal(results.filter(r=>r.error?.code==='40001').length,1,'Stale move explicitly conflicts');
+  assert.equal(results.filter(r=>r.error?.code==='PT409').length,1,'Stale move explicitly conflicts');
   const confirmed=await snapshot(manager);
   assert.equal(confirmed.assignments.length,1);
   const finalGroup=confirmed.assignments[0].group_id;
@@ -82,14 +84,20 @@ try {
   assert.equal((await snapshot(staff)).assignments.length,1,'Departed booking cannot be duplicated');
   // Real storage upload and private URL checks.
   const { readFile }=await import('node:fs/promises');
-  const path=`${dog}/${crypto.randomUUID()}.png`;
+  const workspace=await rpc(manager,'current_workspace');
+  const path=`${workspace}/${dog}/${crypto.randomUUID()}.png`;
   const upload=await manager.storage.from('dog-photos').upload(path,await readFile('public/icon-192.png'),{contentType:'image/png'});
   assert.equal(upload.error,null);
   const signed=await staff.storage.from('dog-photos').createSignedUrl(path,60);
   assert.ok(signed.data?.signedUrl);
   assert.ok((await anonymous.storage.from('dog-photos').createSignedUrl(path,60)).error);
   await manager.storage.from('dog-photos').remove([path]);
-  console.log('PASS: two browsers, saved refresh, Realtime convergence, concurrent moves, independent attendance, departure history, offline recovery, access restrictions and private storage.');
+  const history=await staff.from('movement_events').select('*').eq('assignment_id',departed.id).order('id');
+  assert.equal(history.error,null);
+  assert.ok(history.data.some(e=>e.event_type==='moved'));
+  assert.ok(history.data.some(e=>e.to_status==='departed'));
+  assert.ok((await staff.from('movement_events').delete().eq('assignment_id',departed.id)).error);
+  console.log('PASS: two browsers, saved refresh, Realtime convergence, concurrent moves, independent attendance, append-only history, offline recovery, access restrictions and private storage.');
 } finally {
   await browser?.close();
   if(channel)await staff.removeChannel(channel);

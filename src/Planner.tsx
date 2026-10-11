@@ -7,7 +7,10 @@ import {
 import type { CollisionDetection, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { ArrowLeft, ArrowRight, CalendarDays, Database, History, LogOut, PawPrint, Pencil, Plus, Search, X } from 'lucide-react';
-import { counts, groupCounts, isActive, lane, todayBrisbane } from './model';
+import { counts, groupCounts, isActive, lane, todayBrisbane, runs } from './model';
+import type { Run } from './model';
+import { Sparkles, DropletOff } from 'lucide-react';
+import { runWarnings } from './runs';
 import type { Assignment, Attendance, Dog, Group, Snapshot } from './model';
 import type { Repository } from './repository';
 import { demoNotes, demoRules, groupConflicts } from './behaviour';
@@ -80,6 +83,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const [editor, setEditor] = useState<Partial<Dog> | null>(null);
   const [rename, setRename] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
+  const [alertGroup, setAlertGroup] = useState<string | null>(null);
   const [selection, setSelection] = useState<Assignment | null>(null);
   const [drag, setDrag] = useState<Assignment | null>(null);
   const [removing, setRemoving] = useState<Assignment | null>(null);
@@ -109,7 +113,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   function changeDate(next: string) {
     if (!next || busy) return;
     setDate(next); setSelection(null); setDrag(null); setRename(null); setInfoId(null);
-    setHistory(false); setDatabase(false); setClearing(null); setRemoving(null); setSearch('');
+    setHistory(false); setDatabase(false); setClearing(null); setRemoving(null); setSearch(''); setAlertGroup(null);
   }
   function offsetDate(amount: number) {
     const next = new Date(`${date}T12:00:00Z`);
@@ -147,7 +151,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     return <SortableContext items={filtered.map(a => a.id)} strategy={rectSortingStrategy}>
       {filtered.map(a => <DogCard key={a.id} assignment={a} dog={dogsById.get(a.dog_id)!}
         selected={selection?.id === a.id} disabled={!editable}
-        indicator={rules.some(r => r.active && r.dogs.includes(a.dog_id)) ? 'Interaction rule — open dog information' : undefined}
+        indicator={(state!.groups.some(g => runWarnings([a], state!.dogs, g).length) ? 'Water park warning — open dog information' : rules.some(r => r.active && r.dogs.includes(a.dog_id)) ? 'Interaction rule — open dog information' : undefined)}
         select={() => setSelection(selection?.id === a.id ? null : a)}
         info={() => showInfo(a.dog_id)} arrive={() => void attendance(a, 'present')}/>)}
       {group === null && !filtered.length && <p className="strip-empty">{search ? 'No matching unassigned dogs.' : 'All booked dogs are assigned. Book another dog using Dog database.'}</p>}
@@ -195,7 +199,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <div className={`selection-bar ${selection ? 'has-selection' : ''}`}>
           <span>{selection ? <><strong>{selectedName}</strong> selected · choose a destination</> : 'Select a dog, then a group · Drag by the grip · Hold a card for details'}</span>
           {selection && <button className="text-button" aria-label="Cancel selection" onClick={() => setSelection(null)}><X size={14}/>Cancel</button>}
-          <small>{repo.demo ? 'Fictional bookings, attendance & rules' : 'Interaction rules not configured'}</small>
+          <small>{repo.demo ? 'Fictional bookings, attendance & rules' : 'Synthetic pilot · no real records'}</small>
         </div>
         <nav className={`group-tabs ${selection || drag ? 'moving' : ''}`} aria-label="Group views and destinations">
           <DestinationTab id="unassigned" name="Unassigned" active={view === 'unassigned'} moving={!!selection || !!drag}
@@ -215,7 +219,12 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
               <GroupLane id={g.group_id} name={g.displayed_name} order={g.display_order} present={c.present} planned={c.planned}
                 selected={!!selection && editable} dragging={!!drag} destination={() => { if (selection) void move(selection, g.group_id); }}
                 rename={manager && editable ? () => setRename(rename === g.group_id ? null : g.group_id) : undefined}
-                warnings={groupConflicts(state.assignments, g.group_id, rules)}
+                warnings={[...groupConflicts(state.assignments, g.group_id, rules), ...runWarnings(state.assignments, state.dogs, g)]}
+                showWarnings={() => setAlertGroup(g.group_id)}
+                runSelector={<select className="run-select" aria-label={`Run for ${g.displayed_name}`} value={g.run || ''} disabled={!editable}
+                  onChange={e => void run(() => repo.assignRun(state.day.id, g.group_id, (e.target.value || null) as Run | null, g.run_version || 1))}>
+                  <option value="">Select run…</option>{runs.map(r => <option key={r}>{r}</option>)}
+                </select>}
                 editor={rename === g.group_id ? <Rename group={g} editable={editable} close={() => setRename(null)}
                   submit={(name, future) => run(() => repo.rename(state.day.id, g.group_id, name, future))}/> : undefined}>
                 {cards(g.group_id)}
@@ -226,7 +235,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         </main>
         <DragOverlay style={{ pointerEvents: 'none' }}>{drag && <div className="drag-preview"><Avatar dog={dogsById.get(drag.dog_id)!}/><strong>{dogsById.get(drag.dog_id)!.name}</strong><span>{drag.attendance_status}</span></div>}</DragOverlay>
       </DndContext>}
-    <footer className="planner-footer"><span>{repo.demo ? 'Demo resets on refresh.' : 'Shared daily board.'} Assignment does not mark arrival.</span>
+    <footer className="planner-footer"><span>{repo.demo ? 'Demo resets on refresh.' : 'Synthetic shared pilot.'} Assignment does not mark arrival.</span>
       {manager && <button className="text-button danger" disabled={!editable || totals.expected === 0} onClick={() => setClearing(state!.day)}>Clear expected bookings</button>}
     </footer>
     {database && state && <Modal title="Dog database" wide close={() => setDatabase(false)}>
@@ -235,6 +244,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       <div className="database-list">{state.dogs.filter(d => !d.is_archived && d.name.toLocaleLowerCase().includes(databaseSearch.toLocaleLowerCase())).sort((a, b) => a.name.localeCompare(b.name)).map(dog => {
         const booking = state.assignments.find(a => a.dog_id === dog.id);
         return <div className="database-row" key={dog.id}><Avatar dog={dog}/><strong>{dog.name}</strong>
+          <button className="icon-button" aria-label={`Markers for ${dog.name}`} title="Dog markers" onClick={() => { setDatabase(false); showInfo(dog.id); }}><Sparkles size={16}/></button>
           {manager && <button className="icon-button" aria-label={`Edit ${dog.name}`} disabled={!editable} onClick={() => { setDatabase(false); setEditor(dog); }}><Pencil size={15}/></button>}
           <button disabled={!editable || !!booking} aria-label={booking ? `${dog.name} already booked` : `Book ${dog.name} for day`}
             onClick={() => void run(() => repo.add(state.day.id, dog.id))}>{booking ? booking.attendance_status === 'departed' ? 'Departed · recorded' : 'Already booked' : 'Book for day'}</button>
@@ -251,6 +261,12 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       <div className="info-summary"><Avatar dog={infoDog}/><div><strong>{infoAssignment?.attendance_status || 'Not booked'}</strong>
         <p>{infoAssignment?.group_id ? state.groups.find(g => g.group_id === infoAssignment.group_id)?.displayed_name : 'Unassigned'}{infoDog.is_archived ? ' · Archived record' : ''}</p></div></div>
       {repo.demo && <p className="fixture-label">Fictional information · demonstration only</p>}
+      <div className="marker-actions" aria-label="Dog markers">
+        <button aria-pressed={!!infoDog.groomed} disabled={!editable} onClick={() => void run(() => repo.markers(infoDog.id, !infoDog.groomed, !!infoDog.no_waterpark, infoDog.marker_version || 1))}><Sparkles size={18}/>Groomed/bathed</button>
+        <button aria-pressed={!!infoDog.no_waterpark} disabled={!editable} onClick={() => void run(() => repo.markers(infoDog.id, !!infoDog.groomed, !infoDog.no_waterpark, infoDog.marker_version || 1))}><DropletOff size={18}/>No water park</button>
+      </div>
+      <p className="muted">Markers stay on this dog until cleared. No water park records the owner’s request.</p>
+      {state.groups.flatMap(g => runWarnings(state.assignments.filter(a => a.dog_id === infoDog.id), state.dogs, g)).map(w => <p role="alert" className="rule-note" key={w.id}>{w.note}</p>)}
       <h3>Handling notes</h3><p>{repo.demo ? demoNotes[infoDog.id] || 'No fictional handling notes for this dog.' : 'No handling notes configured.'}</p>
       <h3>Interaction rules</h3>
       {rules.filter(r => r.active && r.dogs.includes(infoDog.id)).map(r => <p className="rule-note" key={r.id}>{r.note}</p>)}
@@ -267,6 +283,10 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         {infoAssignment?.attendance_status === 'present' && <button className="primary" disabled={!editable} onClick={async () => { if (await attendance(infoAssignment, 'departed')) setInfoId(null); }}>Mark departed</button>}
         {infoAssignment?.attendance_status === 'departed' && <button disabled={!editable} onClick={async () => { if (await attendance(infoAssignment, 'present')) setInfoId(null); }}>Undo departure</button>}
       </footer>
+    </Modal>}
+    {alertGroup && state && <Modal title={`Warnings · ${state.groups.find(g => g.group_id === alertGroup)?.displayed_name}`} close={() => setAlertGroup(null)}>
+      {[...groupConflicts(state.assignments, alertGroup, rules), ...state.groups.filter(g => g.group_id === alertGroup).flatMap(g => runWarnings(state.assignments, state.dogs, g))].map(w => <p className="rule-note" key={w.id}><strong>{w.severity === 'present' ? 'Present' : 'Planned'}:</strong> {w.note}</p>)}
+      <p className="muted">Warnings are advisory. Review the marked dogs before using this run.</p>
     </Modal>}
     {history && state && <Modal title="Day records" wide close={() => setHistory(false)}>
       <p className="muted">{totals.total} booked · {totals.present} Present · {totals.expected} Expected · {totals.departed} Departed. Departed dogs keep their last group.</p>

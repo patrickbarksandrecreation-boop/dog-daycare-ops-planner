@@ -219,3 +219,50 @@ test('390px touch supports tap moves, stationary hold and grip drag without conf
     await page.screenshot({path:'docs/screenshots/mobile-390.png'});
   } finally { await context.close(); }
 });
+
+test('dog markers and group runs show and clear contextual water park warnings',async({page})=>{
+  await demo(page,'morning');
+  await page.getByRole('button',{name:'Information for Alfie',exact:true}).click();
+  await page.getByRole('button',{name:'Groomed/bathed',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Groomed/bathed',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:'No water park',exact:true}).click();
+  await expect(page.getByRole('button',{name:'No water park',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('card-Alfie').getByLabel('Groomed/bathed')).toBeVisible();
+  await expect(page.getByTestId('card-Alfie').getByLabel('No water park')).toBeVisible();
+  await page.getByLabel('Run for Group 1',{exact:true}).selectOption('Water park');
+  await move(page,'Alfie','Group 1');
+  await expect(page.getByTestId('warnings-group-1')).toContainText('1 planned conflict');
+  await page.getByRole('button',{name:'View warnings for Group 1',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('Owner requested no water park');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button',{name:'Mark Alfie present',exact:true}).click();
+  await expect(page.getByTestId('warnings-group-1')).toContainText('1 present conflict');
+  await page.getByLabel('Run for Group 1',{exact:true}).selectOption('Playground');
+  await expect(page.getByTestId('warnings-group-1')).not.toContainText('conflict');
+  await page.getByLabel('Run for Group 1',{exact:true}).selectOption('Water park');
+  await expect(page.getByTestId('warnings-group-1')).toContainText('1 present conflict');
+  await page.getByRole('button',{name:'Information for Alfie',exact:true}).click();
+  await page.getByRole('button',{name:'Groomed/bathed',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Groomed/bathed',exact:true})).toHaveAttribute('aria-pressed','false');
+  await page.getByRole('button',{name:'No water park',exact:true}).click();
+  await expect(page.getByRole('button',{name:'No water park',exact:true})).toHaveAttribute('aria-pressed','false');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('warnings-group-1')).not.toContainText('conflict');
+});
+
+test('mobile markers can be set from the database and run selection stays usable',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await demo(page,'planned');
+  await page.getByRole('button',{name:'Dog database',exact:true}).click();
+  await page.getByLabel('Search dog database').fill('Alfie');
+  await page.getByRole('button',{name:'Markers for Alfie',exact:true}).click();
+  await page.getByRole('button',{name:'No water park',exact:true}).click();
+  await expect(page.getByRole('button',{name:'No water park',exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.keyboard.press('Escape');
+  await page.getByLabel('Run for Group 1',{exact:true}).selectOption('Water park');
+  await page.getByRole('button',{name:'View warnings for Group 1',exact:true}).click();
+  await expect(page.getByRole('dialog')).toContainText('Alfie: Owner requested no water park');
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});

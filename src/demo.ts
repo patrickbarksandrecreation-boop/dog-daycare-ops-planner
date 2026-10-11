@@ -1,5 +1,5 @@
 import type { Assignment, Dog, Snapshot } from './model';
-import { lane, todayBrisbane } from './model';
+import { lane, todayBrisbane, runs } from './model';
 import type { Repository } from './repository';
 export type DemoScenario = 'morning' | 'planned' | 'four';
 export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
@@ -90,6 +90,17 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
     async clear(date, revision) {
       if (day(date).day.revision !== revision) throw new Error('The plan has changed. Review it before clearing.');
       day(date).assignments = day(date).assignments.filter(a => a.attendance_status !== 'expected'); changed(date);
+    },
+    async markers(id, groomed, noWaterpark, version) {
+      const dog = dogs.find(d => d.id === id);
+      if (!dog || (dog.marker_version || 1) !== version) throw new Error('Dog markers changed. Refresh and try again.');
+      Object.assign(dog, { groomed, no_waterpark: noWaterpark, marker_version: version + 1 }); changed();
+    },
+    async assignRun(date, id, run, version) {
+      const group = day(date).groups.find(g => g.group_id === id);
+      if (!group || (group.run_version || 1) !== version) throw new Error('Group run changed. Refresh and try again.');
+      if (run !== null && !runs.includes(run)) throw new Error('Invalid run.');
+      Object.assign(group, { run, run_version: version + 1 }); changed(date);
     },
     async saveDog(input, photo) {
       const existing = dogs.find(d => d.id === input.id);

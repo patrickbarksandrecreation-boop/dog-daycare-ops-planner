@@ -1,6 +1,6 @@
 # Roadmap and acceptance contracts (v0.1)
 
-> Historical milestone plan. [WORKFLOW.md](WORKFLOW.md) is the current operational and GUI source of truth; [STATUS.md](STATUS.md) records implemented functionality and verified limitations. The old panel layout and anonymous-session proposal below do not override the approved workflow or existing staff authentication.
+> Historical milestone plan. [WORKFLOW.md](WORKFLOW.md) is the current operational and GUI source of truth; [STATUS.md](STATUS.md) records verified state. [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md) records the approved authentication decision.
 
 ## M0: Repository foundation
 Create Vite + React + TypeScript app, lean docs, lint/typecheck/test commands, `.env.example` if needed. No external services or real data.
@@ -15,6 +15,10 @@ Set up PWA manifest/icons and Netlify-friendly deployment/config. Publish only w
 **Pass**: HTTPS pilot URL opened on phone, install guidance, no fabricated deploy-success claims, fresh reload works.
 
 ## M3: Shared realtime board
+
+**Approved release approach:** anonymous Supabase sessions with a display name and persistent browser sessions. Migrations 001–004 and anonymous enrollment are applied to the synthetic project. Netlify publication and live acceptance status are tracked in [STATUS.md](STATUS.md).
+
+Implementation and access matrix: [M3-PERSISTENCE.md](M3-PERSISTENCE.md). Workspace isolation and transactional movement history are implemented by migration 003. Anonymous enrollment grants staff membership only in the enabled synthetic workspace; neither the session nor display name proves employee identity. See [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md) for setup and live tests.
 Supabase schema + migrations + row-level security appropriate for **synthetic-only** demo; anonymous device sessions + optional entered display name; authoritative placement writes; realtime subscriptions + re-fetch on reconnect; error, offline and sync indicators; audit events for moves. Keep project/service credentials out of git.
 **Pass**: 2 devices see changes without refresh, reload preserves state, simultaneous edits resolve consistently, security tests show expected policy boundaries. If cloud project/keys absent, leave integration ready and give precise manual setup steps; do not pretend end-to-end verified.
 

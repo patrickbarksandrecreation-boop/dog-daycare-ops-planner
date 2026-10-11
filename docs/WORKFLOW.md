@@ -40,13 +40,23 @@ This iteration has deterministic, explicitly fictional pair rules and handling n
 
 ## Approved visual requirements
 
+### Dog markers and physical runs
+
+- Open dog information (card information button, long press, or Dog database → dog markers) and toggle **Groomed/bathed** (sparkles) or **No water park** (crossed droplet). Staff can set and clear both independently. Active icons appear on cards. Markers belong to the dog and persist across dates until explicitly cleared; grooming has no automatic expiry.
+- Each group's heading offers a daily **Run** selector: **Water park, Playground, Farm, Small indoor, A-Frame**, or unassigned. A run is the physical location for that group. New dates start with no run selected. Multiple groups may select the same run; no exclusive occupancy or capacity rule was requested.
+- In Water park, a dog with either marker contributes one warning, listing both reasons if applicable. Expected dogs produce planned (amber) warnings; Present dogs produce present (red) warnings. Departed dogs do not contribute. Warnings are advisory and never silently reject a move.
+- Changing a marker, group, attendance state or run recalculates warnings from confirmed data. Group warning buttons open full details naming affected dogs; individual dog information also shows the Water park warning. Other runs have no configured restrictions yet.
+- Cloud marker and run updates use workspace-scoped, staff-authorised RPCs and separate version checks. Marker changes are delivered through existing dog Realtime events; run changes bump the day's revision. Migration 004 is required after 001–003. No behavioural-note backend is added.
+
+### Layout
+
 - Compact top area: unassigned-only search, separate database search/access, visible **+ New Dog**, and an unassigned card strip.
 - Three tall side-by-side group columns on desktop. Render from group data; support a fourth without hardcoded UI branches.
 - Dense two-column card grids within wide group lanes; legible names, small avatar, indicator slot, attendance action, visible selection/drag states.
 - Compact headings with group name, Present / Planned counts and warning area.
 - Target at least approximately 70 fully visible group cards at 1920 × 1080 and 100% zoom. Measure card rectangles, not a visual impression. No forced zoom.
 - Phones around 390px use group switching and a persistent destination chooser when selected/dragging; Unassigned remains readily reachable. Same operations remain available.
-- Preserve existing date navigation, group labels/defaults, master dog editing/photos/archive, shared-state reconciliation, permissions and offline write gating. Do not add authentication or change existing access rules.
+- Preserve existing date navigation, group labels/defaults, master dog editing/photos/archive, shared-state reconciliation, permissions and offline write gating. Approved anonymous authentication and synthetic enrollment are defined in ANONYMOUS-PILOT.md; workspace boundaries and manager permissions remain enforced.
 - Quick dog creation requires only a name; optional photo uses the existing editor. Warn on matching names and require explicit duplicate-name acknowledgement, since legitimate duplicates exist.
 
 ## Acceptance

@@ -4,8 +4,13 @@ export type Dog = {
   photo_path: string | null;
   is_archived: boolean;
   photo_url?: string;
+  groomed?: boolean;
+  no_waterpark?: boolean;
+  marker_version?: number;
 };
-export type Group = { group_id: string; displayed_name: string; display_order: number };
+export const runs = ['Water park', 'Playground', 'Farm', 'Small indoor', 'A-Frame'] as const;
+export type Run = typeof runs[number];
+export type Group = { group_id: string; displayed_name: string; display_order: number; run?: Run | null; run_version?: number };
 export type Attendance = 'expected' | 'present' | 'departed';
 export type Assignment = {
   id: string;

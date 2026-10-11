@@ -1,59 +1,34 @@
 # Implementation status
 
-Verified 10 October 2026. [WORKFLOW.md](WORKFLOW.md) is the approved operational source of truth; [layout-reference.png](layout-reference.png) preserves the supplied sketch.
+Verified 11 October 2026. [WORKFLOW.md](WORKFLOW.md) governs the approved board; [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md) governs authentication and enrollment. The owner approved anonymous sessions, cloud changes and deployment.
 
-## Completed
+## Ready and verified
 
-- Compact top Unassigned strip, unassigned-only search, separate master database search and visible New Dog.
-- Three tall desktop groups with two-column card grids; data-driven four-column fixture.
-- Expected dogs can be grouped before arrival. Card Arrive confirms physical receipt independently of group assignment.
-- Present/Planned group totals and day-wide Expected/Present/Departed totals derive from daily records.
-- Departure removes the active card and retains identity, last group and timestamps in Day records. Undo departure corrects a mistake. Received/departed rows survive removal/clear actions.
-- Drag between all active locations, grid reordering, click/tap/keyboard selection and destination actions, Escape/reselect cancellation, selection/drop highlights.
-- Right-click, double-click, information button and stationary touch hold open dog details. Movement/scroll cancels hold; the grip never opens the hold popup.
-- Deterministic fictional pair rules with amber planned conflicts and red present-together conflicts. Composition/attendance changes recalculate them.
-- Duplicate booking prevention includes departed dogs; quick creation flags matching master names and requires explicit acknowledgement.
-- Existing dog editing/photos/archive, group rename/defaults, saved dates, access rules and offline write gating retained.
-- Additive migration 002 adds only related attendance fields/RPC and fourth-group capacity. Original schema migration is unchanged. Existing placements are preserved; no cloud migration has been applied.
+- Dense desktop board, three groups expandable to four, drag/tap moves, touch hold details, independent Expected/Present/Departed attendance and retained day records remain implemented.
+- Groomed/bathed and No water park markers persist until cleared. Daily group runs offer Water park, Playground, Farm, Small indoor and A-Frame; advisory warnings distinguish Expected and Present dogs.
+- Supabase Dog-daycare-op-manager (pkvvxutryhordwphlxof) has all six migrations below and 20 fictional master dogs. Anonymous sign-in is enabled and verified. Display-name enrollment creates staff membership only in the enabled synthetic workspace; browser sessions persist. Manager permissions remain restricted.
+- Workspace-scoped constraints/RLS, atomic version-checked moves and append-only movement/attendance events are applied. A live test exposed timeouts for stale writes using SQLSTATE 40001. The additive explicit-conflicts migration returns PT409 / HTTP 409 while preserving locking, grants and scope checks; live competing moves now return one success and one clear conflict.
+- Live test against Supabase with two independent Chromium sessions passed: anonymous enrollment, booking and movement convergence, refresh/session persistence, simultaneous moves, independent attendance, departure removal, history reads/write denial, denied role escalation and offline recovery. Successful test date: 2035-10-13. Earlier diagnostic dates 2035-10-10 through 2035-10-12 retain fictional records; history was not deleted.
+- Local tests: 41 model/PostgreSQL/config tests, TypeScript and production build passed. Prior preserved-GUI browser suite: 13 passed. Desktop evidence: 72 complete group cards at 1920×1080; 390px touch emulation passed. These do not substitute for physical-device acceptance. Vite reports a non-blocking bundle-size warning (540 kB before gzip).
 
-## Verification
+## Applied migration ledger
 
-| Check | Result |
+The connected migration service assigns cloud versions different from local filenames. Do not blindly replay local migrations through CLI.
+
+| Local migration | Applied cloud version |
 |---|---|
-| TypeScript | Passed |
-| Vite production build | Passed |
-| Model/workflow tests | 6 passed |
-| PostgreSQL/RLS tests | 14 passed |
-| Existing-data migration test | 1 passed |
-| Chromium browser workflows | 11 passed |
-| Production PWA shell / offline reload | Passed |
-| Desktop density, 1920×1080 | **72 fully visible group cards**, 100% zoom, 13px names, no horizontal overflow |
-| 390×844 mobile browser | Tap moves, touch hold, hold cancellation on movement, touch grip drag, destination tabs and no horizontal overflow passed |
+| 001_planner.sql | 20261010084004 |
+| 002_attendance.sql | 20261010084243 |
+| 003_workspace_history.sql | 20261010084320 |
+| 004_runs_markers.sql | 20261010084328 |
+| 20261010083809_anonymous_pilot.sql | 20261010084335 |
+| 20261011034943_explicit_conflicts.sql | 20261011035057 |
 
-Total: **32 automated tests**, plus production build/type-check and standalone PWA verification. Database tests execute PostgreSQL using PGlite with Supabase service stubs. Browser tests use fictional in-memory data. Neither proves live Supabase behaviour.
+## Release checklist and remaining limits
 
-The browser tests caught and fixed a settling drag overlay intercepting a subsequent drag. The overlay is now non-interactive. Decorative initials are hidden from accessible names. Screenshots were inspected after test completion.
-
-## Screenshots and preview
-
-- [Desktop 1920×1080](screenshots/desktop-1920.png)
-- [Mobile 390×844](screenshots/mobile-390.png)
-- Local preview: `http://127.0.0.1:5173/`. Choose **Planned day** before Explore the demo for the density example; choose Morning for all 100 bookings initially unassigned.
-
-## Remaining limitations
-
-- Supabase project, credentials and staff accounts are not configured. Actual hosted Auth, Storage and multi-device Realtime—including live arrival/departure synchronisation—remain unverified. The opt-in live test was updated and syntax-checked, not executed.
-- Touch was verified with real Chromium touch events under device emulation. Physical Android hardware and installed-PWA behaviour still need acceptance testing.
-- Behavioural notes and rules are fictional demo fixtures only. Cloud boards explicitly show that rules are not configured. Production rule storage/editing is deferred.
-- Bookings are manual or fictional fixtures. No Petboost or external booking integration.
-- The status row retains first arrival and most recent departure, not an event-by-event audit.
-- The interface and schema support a fourth configured group, but adding/removing group configurations through a manager screen is future work.
-- Demo data resets on refresh. Real persistence requires applying migrations 001 and 002 to Supabase.
-
-## Repository and release
-
-Local development branch: `codex/dense-planning-attendance`.
-
-The original local project had no AGENTS.md or commits. The user subsequently supplied the GitHub repository and author identity. Its existing main history is retained as the parent of this implementation, and its AGENTS.md, historical documentation, evidence and hosting configuration are preserved. WORKFLOW.md takes precedence over historical product and roadmap descriptions. The implementation is prepared on the development branch for GitHub review; main remains unchanged.
-
-No merge, publication or production deployment was performed.
+- Netlify target: https://dog-daycare-ops-planner.netlify.app/. Publication is approved but pending Netlify account authorization; no new deployment is claimed. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY before the pnpm build, publish dist, then repeat the live test against the deployed origin. No server key is needed.
+- Browser anonymous identity and a typed name are not verified employee identity. Enrollment is openly joinable for synthetic data. CAPTCHA/abuse controls, controlled admission and a privacy review are required before considering real records.
+- Cross-workspace and revoked-membership denial have local PostgreSQL coverage; dedicated hosted cross-workspace, manager/private-photo and revocation tests remain outstanding. Test physical Android/PWA use and multiple real devices.
+- Post-migration advisors report the deliberately inaccessible enrollment ledger and authenticated SECURITY DEFINER RPCs. Their explicit grants, membership checks, empty search paths and scoped operations are reviewed and locally tested; see ANONYMOUS-PILOT.md.
+- No behavioural-note backend or Petboost integration. Cloud interaction rules are unconfigured; demo rules remain fictional. Marker/run changes are not movement-audit events. Audit history starts when migration 003 was applied; database owners retain administrative powers.
+- Source branch: codex/m3-scoped-persistence, based on f972acb (remote dense-planning-attendance). Last compared main: 9ad7c25. No merge to main is claimed.

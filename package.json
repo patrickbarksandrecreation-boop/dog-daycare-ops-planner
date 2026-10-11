@@ -11,7 +11,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:live": "node tests/live-supabase.mjs",
+    "test:live": "node --env-file=.env.local tests/live-anonymous.mjs",
+    "test:live:password": "node tests/live-supabase.mjs",
     "test:pwa": "pnpm build && node scripts/check-pwa.mjs"
   },
   "dependencies": {

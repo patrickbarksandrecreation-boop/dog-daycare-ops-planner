@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AlertTriangle, Check, GripVertical, Info } from 'lucide-react';
+import { AlertTriangle, Check, GripVertical, Info, Sparkles, DropletOff } from 'lucide-react';
 import type { Assignment, Dog } from '../model';
 import { Avatar } from './Avatar';
 export function DogCard({ assignment, dog, selected, disabled, indicator, select, info, arrive }: {
@@ -35,6 +35,8 @@ export function DogCard({ assignment, dog, selected, disabled, indicator, select
       onPointerMove={event => { if (Math.hypot(event.clientX - start.current.x, event.clientY - start.current.y) > 8) cancelHold(); }}
       onPointerUp={cancelHold} onPointerCancel={cancelHold} onPointerLeave={cancelHold}>
       <Avatar dog={dog}/><span className="dog-name" title={dog.name}>{dog.name}</span>
+      {dog.groomed && <Sparkles className="dog-marker groomed" size={14} aria-label="Groomed/bathed"/>}
+      {dog.no_waterpark && <DropletOff className="dog-marker no-water" size={14} aria-label="No water park"/>}
     </button>
     <span className="indicator-slot" title={indicator}>{indicator && <AlertTriangle size={14} aria-label={indicator}/>}</span>
     {assignment.attendance_status === 'expected'

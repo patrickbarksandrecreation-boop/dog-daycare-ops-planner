@@ -20,7 +20,7 @@ Open `http://127.0.0.1:5173`. Select a **Demo scenario**, then **Explore the dem
 - **Planned day:** 90 dogs assigned to three groups, ten unassigned; a mixture of Expected and Present, with fictional planned/present conflicts.
 - **Four groups:** a future-layout fixture with four data-driven columns.
 
-There are 110 fictional master dog records, so ten remain unbooked and can be found through Dog database. Demo changes last only for the session and reset on refresh. Demo is not shared persistence. No cloud project or credentials have been supplied; live Supabase verification remains pending.
+There are 110 fictional master dog records, so ten remain unbooked and can be found through Dog database. Demo changes last only for the session and reset on refresh. Demo is not shared persistence. The active Supabase project has the application migrations and 20 fictional master dogs. Anonymous access uses a display name. See [current status](docs/STATUS.md) for live acceptance and deployment evidence.
 
 ## Everyday operation
 
@@ -39,32 +39,16 @@ Amber demo warnings identify a planned conflict where at least one dog is Expect
 
 ## Configure Supabase
 
-One Supabase project serves one workplace. There is no multi-tenant architecture or external booking integration.
+Dog markers and physical group runs require [004_runs_markers.sql](supabase/migrations/004_runs_markers.sql) after migrations 001–003. Existing installations apply only missing migrations. Staff toggle Groomed/bathed and No water park in dog information, and choose each group's run in its heading. Both markers persist until cleared; run selection belongs to the selected date. Water park warnings distinguish Expected and Present dogs and remain advisory. See [WORKFLOW.md](docs/WORKFLOW.md).
 
-1. Create a project in the [Supabase dashboard](https://supabase.com/dashboard).
-2. Run [001_planner.sql](supabase/migrations/001_planner.sql), then [002_attendance.sql](supabase/migrations/002_attendance.sql), once each, in SQL Editor. Alternatively use your normal Supabase CLI migration workflow. The migrations create the schema, checked RPCs, RLS, private photo bucket, Realtime publication, and independent attendance fields.
-3. **Existing 001 installation: run only 002.** It preserves dog records and group placements; old daily rows become Expected because physical receipt cannot be inferred. Back up real records before applying migrations. No cloud migration was applied during development.
-4. Keep email/password sign-in enabled; disable public sign-up and anonymous sign-in. Existing authentication is unchanged. Each account also requires an explicit staff profile. See [Auth configuration](https://supabase.com/docs/guides/auth/general-configuration).
-5. Create individual staff users in **Authentication → Users** using the create-user/password flow, not an invitation requiring an onboarding screen. Manage password resets through the project administrator. See [Supabase users](https://supabase.com/docs/guides/auth/users).
-6. Authorise each user's UUID using SQL Editor:
+Workspace-scoped synthetic persistence is documented in [M3-PERSISTENCE.md](docs/M3-PERSISTENCE.md), including the access matrix and setup for multiple workspaces. No external booking integration exists.
 
-```sql
-insert into public.staff_profiles (id, display_name, role)
-values ('PASTE-AUTH-USER-UUID-HERE', 'Your name', 'manager');
--- Repeat for ordinary staff with role 'staff'.
-```
-
-7. Copy `.env.example` to ignored `.env`, then enter:
-
-```dotenv
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-public-publishable-or-anon-key
-```
-
-Use only a public publishable/legacy anon key. **Never put a secret/service-role key, database password or staff password in a VITE variable**; those values are embedded in browser code. Restart the dev server after changes.
-
-8. Sign in and check the connection indicator becomes Live. The first visit creates an empty day and snapshots its group labels; staff then enter bookings manually through the database. There is no Petboost integration.
-9. Optionally run [demo_seed.sql](supabase/demo_seed.sql) in a test project for 20 fictional master records. It does not book or receive dogs. The richer 100-booking fixtures are isolated browser demos.
+1. Follow [ANONYMOUS-PILOT.md](docs/ANONYMOUS-PILOT.md). The approved existing project already has migrations 001–004, anonymous enrollment and explicit HTTP conflict responses. Do not replay applied migrations; cloud ledger versions are recorded in STATUS.md.
+2. For a new synthetic project, apply the migrations in filename order and the fictional demo seed. Enable and save **Allow anonymous sign-ins** in Supabase Authentication settings.
+3. Copy .env.example to ignored .env.local and set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Use only the public publishable key, never a secret/service-role key or password. Restart Vite after changes. Configure the same two public build variables in Netlify.
+4. Enter a display name and join the shared pilot. The browser retains its anonymous session. Enrollment grants staff access only to the enabled synthetic workspace. Display names and anonymous sessions do not verify employee identity.
+5. Managers remain administrator-provisioned; ordinary pilot users can book existing fictional dogs, move them, mark attendance and edit markers/runs. They cannot promote themselves or administer master dogs.
+6. New dates are empty. Use Dog database → Book for day. There is no external booking integration.
 
 ### Realtime, security and photos
 
@@ -77,7 +61,7 @@ select schemaname, tablename from pg_publication_tables
 where pubname = 'supabase_realtime';
 ```
 
-`unique(planning_day_id,dog_id)` prohibits duplicate placement, including rebooking a departed dog. Composite foreign keys validate group membership. Checked SECURITY DEFINER functions use an empty search path and restricted execution grants. Staff cannot write tables directly or self-enrol/change roles. Existing RLS and manager restrictions are retained. See [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
+`unique(planning_day_id,dog_id)` prohibits duplicate placement, including rebooking a departed dog. Composite foreign keys validate group membership. Checked SECURITY DEFINER functions use an empty search path and restricted execution grants. Staff cannot write tables directly or change roles. The checked enrollment RPC grants only fixed-workspace synthetic staff membership. Existing RLS and manager restrictions are retained. See [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
 
 Mutations briefly lock the day row and use the individual record version. A move changes location/order only; attendance changes status/timestamps only. A simultaneous move and arrival with the same version produces one success and one explicit conflict, then the client refreshes. Clear checks the day revision captured at confirmation and only removes Expected bookings.
 
@@ -89,7 +73,7 @@ Editing pauses while saving, connecting or offline. Changes appear after server 
 
 If a request loses its connection, the server may still have committed it. Review the refreshed state rather than assuming nothing was saved. Concurrent actions on the same dog surface a conflict instead of silently overwriting a newer version.
 
-Departures retain the daily row and last group. The current status, first arrival and most recent departure are recorded; this is not a full movement/attendance event audit. Group labels are historical snapshots; dog names/photos reflect the master record. No destructive dog-delete API is exposed.
+Departures retain the daily row and last group. The current status, first arrival and most recent departure are recorded; migration 003 additionally records append-only movement and attendance events from its application onward. Group labels are historical snapshots; dog names/photos reflect the master record. No destructive dog-delete API is exposed.
 
 ## Architecture
 
@@ -121,9 +105,9 @@ pnpm preview
 
 [TESTING.md](docs/TESTING.md) documents executed checks and the opt-in live Supabase test. Hosted Auth/Storage, actual cross-device Realtime and physical Android acceptance are not implied by passing demo browser tests.
 
-For a future approved deployment, use a HTTPS static host with Node 22+, build `pnpm install --frozen-lockfile && pnpm build`, and output directory `dist`. Set the two public Vite variables before the build. Serve from the domain root; use revalidation for `index.html`/`sw.js` and immutable caching for hashed assets. Set the Supabase Auth site URL to the deployed origin. Rebuild after changing Vite settings. No frontend server secrets are needed.
+For the approved deployment, use a HTTPS static host with Node 22+, build `pnpm install --frozen-lockfile && pnpm build`, and output directory `dist`. Set the two public Vite variables before the build. Serve from the domain root; use revalidation for `index.html`/`sw.js` and immutable caching for hashed assets. Set the Supabase Auth site URL to the deployed origin. Rebuild after changing Vite settings. No frontend server secrets are needed.
 
-The manifest, icons and service worker support Android installation from HTTPS. Actual installation still needs device verification. No merge or deployment is authorised by this redesign task.
+The manifest, icons and service worker support Android installation from HTTPS. Actual installation still needs device verification. The owner subsequently approved deployment; STATUS.md distinguishes approval from completed publication.
 
 ## Future imports
 

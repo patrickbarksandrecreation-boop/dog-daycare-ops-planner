@@ -226,3 +226,13 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .notice { font-size:11px; }
 }
 @media(prefers-reduced-motion:reduce) { * { transition:none!important; scroll-behavior:auto!important; } }
+/* Compact daily run selection and persistent dog markers. */
+.run-select { width:120px; min-width:0; font-size:12px; padding:5px; margin:0; }
+.dog-marker { flex-shrink:0; }
+.dog-marker.groomed { color:#795299; }
+.dog-marker.no-water { color:#116883; }
+.marker-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.marker-actions button { display:flex; align-items:center; gap:7px; min-height:44px; }
+.marker-actions button[aria-pressed=true] { background:#e2edf5; border-color:#3776a5; color:#18496d; }
+.warning-details { display:flex; align-items:center; gap:6px; padding:0; border:0; background:transparent; color:inherit; font:inherit; min-height:20px; }
+@media(max-width:760px) { .run-select { min-height:44px; width:112px; } .warning-details { min-height:32px; } }

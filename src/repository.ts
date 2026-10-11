@@ -1,4 +1,4 @@
-import type { Attendance, Connection, Dog, Profile, Snapshot } from './model';
+import type { Attendance, Connection, Dog, Profile, Snapshot, Run } from './model';
 export interface Repository {
   demo: boolean;
   profile(): Promise<Profile>;
@@ -10,6 +10,8 @@ export interface Repository {
   attendance(day: string, assignment: string, status: Attendance, version: number): Promise<void>;
   rename(day: string, group: string, name: string, useDefault: boolean): Promise<void>;
   clear(day: string, revision: number): Promise<void>;
+  markers(dog: string, groomed: boolean, noWaterpark: boolean, version: number): Promise<void>;
+  assignRun(day: string, group: string, run: Run | null, version: number): Promise<void>;
   saveDog(dog: Partial<Dog> & { name: string }, photo?: File): Promise<void>;
   signOut(): Promise<void>;
 }

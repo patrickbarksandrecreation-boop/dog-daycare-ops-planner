@@ -1,0 +1,4 @@
+project_id = "dog-daycare-ops-planner"
+
+[functions.replace-dog-photo]
+verify_jwt = true

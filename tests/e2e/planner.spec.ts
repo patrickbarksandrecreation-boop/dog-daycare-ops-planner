@@ -266,3 +266,71 @@ test('mobile markers can be set from the database and run selection stays usable
   await page.keyboard.press('Escape');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
+
+test('breed creation, full-name search, editing and optional values remain separate from booking', async ({page}) => {
+  await demo(page);
+  await page.getByRole('button',{name:'New Dog',exact:true}).click();
+  await page.getByLabel('Dog’s name').fill('Mabel Rowan');
+  await page.getByLabel('Breed (optional)').fill('German Shepherd Dog');
+  await page.getByRole('button',{name:'Save dog',exact:true}).click();
+  await page.getByLabel('Search dog database').fill('shepherd');
+  const row=page.locator('.database-row').filter({hasText:'Mabel Rowan'});
+  await expect(row).toContainText('German Shepherd Dog');
+  await row.getByRole('button',{name:'Book Mabel Rowan for day',exact:true}).click();
+  await page.getByRole('button',{name:'Close dialog'}).click();
+  await page.getByLabel('Search unassigned dogs').fill('Mabel');
+  const card=page.getByTestId('card-Mabel Rowan');
+  await expect(card.locator('.dog-name')).toHaveText('Mabel');
+  await expect(card.locator('.breed-label')).toHaveText('GSD');
+  await card.getByRole('button',{name:'Information for Mabel Rowan'}).click();
+  await expect(page.getByRole('dialog')).toContainText('Breed: German Shepherd Dog');
+  await page.getByRole('button',{name:'Edit dog',exact:true}).click();
+  await page.getByLabel('Breed (optional)').fill('Unknown mixed breed');
+  await page.getByRole('button',{name:'Save dog',exact:true}).click();
+  await card.getByRole('button',{name:'Information for Mabel Rowan'}).click();
+  await expect(page.getByRole('dialog')).toContainText('Breed: Unknown mixed breed');
+  await page.getByRole('button',{name:'Edit dog',exact:true}).click();
+  await page.getByLabel('Breed (optional)').fill('');
+  await page.getByRole('button',{name:'Save dog',exact:true}).click();
+  await expect(card.locator('.breed-label')).toHaveCount(0);
+});
+
+test('ordinary staff can replace a photo without receiving profile-edit controls (simulated repository)', async ({page}) => {
+  // Only this test route renders a staff demo repository; no production test switch.
+  await page.route('**/__staff-fixture',route=>route.fulfill({contentType:'text/html',body:`
+    <div id="root"></div><script type="module">
+    import React from '/node_modules/.vite/deps/react.js';
+    import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
+    import RefreshRuntime from '/@react-refresh';
+    RefreshRuntime.injectIntoGlobalHook(window);
+    window.$RefreshReg$=()=>{}; window.$RefreshSig$=()=>type=>type;
+    window.__vite_plugin_react_preamble_installed__=true;
+    const {Planner}=await import('/src/Planner.tsx');
+    import {demoRepository} from '/src/demo.ts';
+    import '/src/styles.css';
+    const repo=demoRepository('planned');
+    repo.profile=async()=>({id:'demo-staff',display_name:'Synthetic staff',role:'staff'});
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Planner,{repo,onExit:()=>{}}));
+    </script>`}));
+  await page.goto('/__staff-fixture');
+  await expect(page.getByTestId('booked-count')).toHaveText('100');
+  await page.getByRole('button',{name:'Information for Alfie',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Edit dog',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Change photo',exact:true}).click();
+  const picker=page.getByLabel('Choose or take a photo');
+  await picker.setInputFiles({name:'bad.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg/>')});
+  await expect(page.getByRole('button',{name:'Save photo',exact:true})).toBeDisabled();
+  await picker.setInputFiles('public/icon-192.png');
+  await page.getByRole('button',{name:'Save photo',exact:true}).click();
+  const photo=page.getByTestId('card-Alfie').locator('img');
+  await expect(photo).toBeVisible();
+  const previous=await photo.getAttribute('src');
+  await page.getByRole('button',{name:'Dog database',exact:true}).click();
+  await page.getByLabel('Search dog database').fill('Alfie');
+  await expect(page.getByRole('button',{name:'Edit Alfie',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Change photo for Alfie',exact:true}).click();
+  await page.getByLabel('Choose or take a photo').setInputFiles('public/icon-512.png');
+  await page.getByRole('button',{name:'Save photo',exact:true}).click();
+  await expect(photo).not.toHaveAttribute('src',previous!);
+  expect(await photo.evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0)).toBe(true);
+});

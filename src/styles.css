@@ -72,7 +72,7 @@ small,.muted { color:var(--muted); }
 .warning-placeholder { color:#56664d; opacity:.7; font-size:10px; }
 .live-warning { color:#a52626; background:#ffe5df; font-weight:700; }
 .planned-warning { color:#895910; background:#fff0c9; }
-.group-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-content:start; gap:6px; padding:8px; overflow:auto; min-height:0; scrollbar-width:thin; scrollbar-color:#b5c6b1 transparent; }
+.group-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(108px,1fr)); align-content:start; gap:6px; padding:8px; overflow:auto; min-height:0; scrollbar-width:thin; scrollbar-color:#b5c6b1 transparent; }
 .dog-card { display:flex; align-items:center; min-width:0; gap:3px; height:46px; padding:3px 4px 3px 1px; border:1px solid #dce4d8; background:#fff; border-radius:6px; position:relative; box-shadow:0 1px 1px #24382f05; }
 .dog-card.present { border-left:3px solid #6c9e84; padding-left:0; }
 .dog-card.selected { border:2px solid #427fbd; box-shadow:0 0 0 2px #427fbd26; background:#eff7ff; padding-left:0; }
@@ -156,7 +156,6 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 .welcome form label { display:flex; flex-direction:column; gap:7px; margin-bottom:15px; font-size:13px; }
 .full { width:100%; }
 @media(max-width:1450px) and (min-width:761px) {
-  .group-grid { grid-template-columns:1fr; }
   .group-destination { align-items:flex-start; flex-direction:column; gap:2px; }
   .workspace-label { display:none; }
 }
@@ -193,8 +192,9 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .group-wrapper { display:none; }
   .group-wrapper.current-view { display:block; }
   .group-lane { min-height:280px; height:auto; overflow:visible; }
-  .group-grid { grid-template-columns:1fr; overflow:visible; padding:7px; gap:6px; }
+  .group-grid { overflow:visible; padding:7px; gap:6px; }
   .group-heading { min-height:50px; }
+  .group-destination { flex-direction:column; align-items:flex-start; gap:2px; }
   .group-destination h2 { font-size:18px; }
   .group-destination { gap:5px; }
   .group-counts { font-size:11px; }
@@ -236,3 +236,36 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 .marker-actions button[aria-pressed=true] { background:#e2edf5; border-color:#3776a5; color:#18496d; }
 .warning-details { display:flex; align-items:center; gap:6px; padding:0; border:0; background:transparent; color:inherit; font:inherit; min-height:20px; }
 @media(max-width:760px) { .run-select { min-height:44px; width:112px; } .warning-details { min-height:32px; } }
+/* Photo-first group tiles; the unassigned strip remains independently scrollable. */
+.group-grid .dog-card { height:116px; display:block; padding:0; overflow:hidden; }
+.group-grid .card-select { width:100%; height:100%; min-height:0; display:flex; flex-direction:column; align-items:stretch; gap:0; padding:0; text-align:center; }
+.group-grid .avatar { width:calc(100% - 50px); margin:0 25px; height:66px; min-height:66px; border-radius:0 0 5px 5px; font-size:24px; background:#e7eddf; }
+.group-grid .card-caption { display:flex; flex-direction:column; align-items:center; min-width:0; padding:4px 4px 0; }
+.group-grid .dog-name { font-size:14px; line-height:17px; -webkit-line-clamp:1; max-width:100%; }
+.breed-label { display:block; font-size:11px; font-weight:400; line-height:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; color:#52664f; }
+.group-grid .drag-handle { position:absolute; top:0; left:0; height:66px; width:24px; min-height:44px; z-index:1; }
+.group-grid .info-action { position:absolute; top:0; right:0; width:24px; height:33px; min-height:33px; }
+.group-grid .arrival-action,.group-grid .present-mark { position:absolute; top:34px; right:0; width:24px; min-width:0; height:32px; min-height:32px; padding:0; border:0; border-radius:0; }
+.group-grid .arrival-action { color:#8b6618; background:#fff4d6; }
+.group-grid .present-mark { color:#226342; background:#e5f3e8; }
+.group-grid .indicator-slot { position:absolute; top:5px; right:27px; background:#fff9; border-radius:3px; pointer-events:none; }
+.card-markers { display:flex; gap:2px; }
+.group-grid .card-markers { position:absolute; left:27px; top:5px; flex-direction:column; background:#fff9; border-radius:3px; pointer-events:none; }
+.group-grid .dog-card.present { border-left:3px solid #6c9e84; }
+.group-grid .dog-card.selected { border:2px solid #427fbd; }
+.unassigned-cards .card-caption { min-width:0; }
+.unassigned-cards .arrival-action,.unassigned-cards .present-mark { width:28px; min-width:28px; padding:0; }
+.database-breed { display:block; font-weight:400; margin-top:3px; }
+.dog-breed-detail { margin-top:12px; }
+@media(max-width:760px) {
+  .group-grid { grid-template-columns:repeat(auto-fill,minmax(154px,1fr)); }
+  .group-grid .dog-card { height:134px; }
+  .group-grid .avatar { width:calc(100% - 64px); margin:0 32px; height:82px; min-height:82px; }
+  .group-grid .drag-handle { width:32px; height:82px; }
+  .group-grid .info-action { width:32px; height:44px; min-height:44px; }
+  .group-grid .arrival-action,.group-grid .present-mark { width:32px; top:44px; height:38px; min-height:38px; }
+  .group-grid .indicator-slot { right:34px; }
+  .group-grid .card-markers { left:34px; }
+  .database-row { flex-wrap:wrap; }
+  .database-row strong { flex-basis:calc(100% - 45px); }
+}

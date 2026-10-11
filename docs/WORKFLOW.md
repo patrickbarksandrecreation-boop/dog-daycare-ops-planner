@@ -26,7 +26,7 @@ For this iteration bookings are entered manually through **Dog database → Book
 | Present | Handler confirms physical receipt | Visible in its existing location |
 | Departed | Dog has left the facility | Hidden from active lanes; retained in Day records |
 
-**Arrive** on the card changes Expected → Present with one action. A group's handler can do this without opening a profile. Information offers **Mark departed** for Present dogs. Day records offers **Undo departure** to restore Present in the previous location after a mistake. No dog is received automatically when booked, created, assigned or moved.
+The small hollow-circle arrival button on the card changes Expected → Present with one action (accessible name: **Mark [dog] present**). Present dogs show a green check. A handler can receive dogs without opening a profile. Information offers **Mark departed** for Present dogs. Day records offers **Undo departure** to restore Present after a mistake. No dog is received automatically when booked, created, assigned or moved.
 
 Attendance and movement share the record version check. A stale action refreshes and reports the conflict instead of overwriting a simultaneous change. Departure retains the dog ID, group ID and arrival/departure timestamps. Expected bookings may be removed; Present or Departed records cannot be deleted through removal or clearing. **Clear expected bookings** removes only Expected records after confirmation and revision validation.
 
@@ -52,7 +52,7 @@ This iteration has deterministic, explicitly fictional pair rules and handling n
 
 - Compact top area: unassigned-only search, separate database search/access, visible **+ New Dog**, and an unassigned card strip.
 - Three tall side-by-side group columns on desktop. Render from group data; support a fourth without hardcoded UI branches.
-- Dense two-column card grids within wide group lanes; legible names, small avatar, indicator slot, attendance action, visible selection/drag states.
+- Responsive photo-first tile grids: five columns per group at 1920px with three groups, two columns at 390px. Legible short names, optional compact breed labels, warning/marker icons, arrival action and visible selection/drag states. Full names/breeds remain in details; repeated short names gain an initial and, if needed, a stable numbered suffix.
 - Compact headings with group name, Present / Planned counts and warning area.
 - Target at least approximately 70 fully visible group cards at 1920 × 1080 and 100% zoom. Measure card rectangles, not a visual impression. No forced zoom.
 - Phones around 390px use group switching and a persistent destination chooser when selected/dragging; Unassigned remains readily reachable. Same operations remain available.

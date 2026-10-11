@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
+    "test:edge": "tsc -p tsconfig.edge.json",
     "test:e2e": "playwright test",
     "test:live": "node --env-file=.env.local tests/live-anonymous.mjs",
     "test:live:password": "node tests/live-supabase.mjs",

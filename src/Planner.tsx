@@ -19,6 +19,8 @@ import { Modal, SaveError } from './components/Modal';
 import { Avatar } from './components/Avatar';
 import { DogCard } from './components/DogCard';
 import { DogEditor } from './components/DogEditor';
+import { PhotoEditor } from './components/PhotoEditor';
+import { matchesDog, shortDogNames } from './dogLabels';
 import { GroupLane } from './components/GroupLane';
 
 function DestinationTab({ id, name, active, moving, choose, summary }: {
@@ -81,6 +83,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const [database, setDatabase] = useState(false);
   const [history, setHistory] = useState(false);
   const [editor, setEditor] = useState<Partial<Dog> | null>(null);
+  const [photoDog, setPhotoDog] = useState<Dog | null>(null);
   const [rename, setRename] = useState<string | null>(null);
   const [infoId, setInfoId] = useState<string | null>(null);
   const [alertGroup, setAlertGroup] = useState<string | null>(null);
@@ -92,6 +95,8 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const manager = profile?.role === 'manager';
   const rules = repo.demo ? demoRules : [];
   const dogsById = new Map(state?.dogs.map(d => [d.id, d]));
+  const photoTarget = photoDog ? dogsById.get(photoDog.id) : undefined;
+  const shortNames = shortDogNames(state?.dogs || []);
   const infoDog = infoId ? dogsById.get(infoId) : undefined;
   const infoAssignment = state?.assignments.find(a => a.dog_id === infoId);
   const sensors = useSensors(
@@ -150,6 +155,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     const filtered = group === null ? all.filter(a => dogsById.get(a.dog_id)!.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())) : all;
     return <SortableContext items={filtered.map(a => a.id)} strategy={rectSortingStrategy}>
       {filtered.map(a => <DogCard key={a.id} assignment={a} dog={dogsById.get(a.dog_id)!}
+        shortName={shortNames.get(a.dog_id)!}
         selected={selection?.id === a.id} disabled={!editable}
         indicator={(state!.groups.some(g => runWarnings([a], state!.dogs, g).length) ? 'Water park warning — open dog information' : rules.some(r => r.active && r.dogs.includes(a.dog_id)) ? 'Interaction rule — open dog information' : undefined)}
         select={() => setSelection(selection?.id === a.id ? null : a)}
@@ -240,10 +246,11 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     </footer>
     {database && state && <Modal title="Dog database" wide close={() => setDatabase(false)}>
       <p className="muted">Master records. Booking adds one Expected dog to this date’s Unassigned strip.</p>
-      <label className="search"><Search size={17}/><input autoFocus aria-label="Search dog database" placeholder="Search all dogs…" value={databaseSearch} onChange={e => setDatabaseSearch(e.target.value)}/></label>
-      <div className="database-list">{state.dogs.filter(d => !d.is_archived && d.name.toLocaleLowerCase().includes(databaseSearch.toLocaleLowerCase())).sort((a, b) => a.name.localeCompare(b.name)).map(dog => {
+      <label className="search"><Search size={17}/><input autoFocus aria-label="Search dog database" placeholder="Search name or breed…" value={databaseSearch} onChange={e => setDatabaseSearch(e.target.value)}/></label>
+      <div className="database-list">{state.dogs.filter(d => !d.is_archived && matchesDog(d, databaseSearch)).sort((a, b) => a.name.localeCompare(b.name)).map(dog => {
         const booking = state.assignments.find(a => a.dog_id === dog.id);
-        return <div className="database-row" key={dog.id}><Avatar dog={dog}/><strong>{dog.name}</strong>
+        return <div className="database-row" key={dog.id}><Avatar dog={dog}/><strong>{dog.name}{dog.breed && <small className="database-breed">{dog.breed}</small>}</strong>
+          <button aria-label={`Change photo for ${dog.name}`} disabled={!editable} onClick={() => { setDatabase(false); setPhotoDog(dog); }}>Photo</button>
           <button className="icon-button" aria-label={`Markers for ${dog.name}`} title="Dog markers" onClick={() => { setDatabase(false); showInfo(dog.id); }}><Sparkles size={16}/></button>
           {manager && <button className="icon-button" aria-label={`Edit ${dog.name}`} disabled={!editable} onClick={() => { setDatabase(false); setEditor(dog); }}><Pencil size={15}/></button>}
           <button disabled={!editable || !!booking} aria-label={booking ? `${dog.name} already booked` : `Book ${dog.name} for day`}
@@ -251,6 +258,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         </div>;
       })}</div>
     </Modal>}
+    {photoTarget && <PhotoEditor dog={photoTarget} editable={editable} close={() => setPhotoDog(null)} save={photo => run(() => repo.replacePhoto(photoTarget, photo))}/>}
     {editor && state && <DogEditor dog={editor} dogs={state.dogs} editable={editable} close={() => setEditor(null)}
       save={async (dog, photo) => {
         const saved = await run(() => repo.saveDog(dog, photo));
@@ -261,6 +269,8 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       <div className="info-summary"><Avatar dog={infoDog}/><div><strong>{infoAssignment?.attendance_status || 'Not booked'}</strong>
         <p>{infoAssignment?.group_id ? state.groups.find(g => g.group_id === infoAssignment.group_id)?.displayed_name : 'Unassigned'}{infoDog.is_archived ? ' · Archived record' : ''}</p></div></div>
       {repo.demo && <p className="fixture-label">Fictional information · demonstration only</p>}
+      <p className="dog-breed-detail">Breed: {infoDog.breed || 'Not recorded'}</p>
+      <button disabled={!editable} onClick={() => { setInfoId(null); setPhotoDog(infoDog); }}>Change photo</button>
       <div className="marker-actions" aria-label="Dog markers">
         <button aria-pressed={!!infoDog.groomed} disabled={!editable} onClick={() => void run(() => repo.markers(infoDog.id, !infoDog.groomed, !!infoDog.no_waterpark, infoDog.marker_version || 1))}><Sparkles size={18}/>Groomed/bathed</button>
         <button aria-pressed={!!infoDog.no_waterpark} disabled={!editable} onClick={() => void run(() => repo.markers(infoDog.id, !!infoDog.groomed, !infoDog.no_waterpark, infoDog.marker_version || 1))}><DropletOff size={18}/>No water park</button>

@@ -1,6 +1,7 @@
 export type Dog = {
   id: string;
   name: string;
+  breed?: string | null;
   photo_path: string | null;
   is_archived: boolean;
   photo_url?: string;
@@ -51,6 +52,7 @@ export const groupCounts = (items: Assignment[], group: string | null) => {
   return { planned: active.length, present: active.filter(a => a.attendance_status === 'present').length };
 };
 export function photoError(file: File): string | null {
+  if (file.size === 0) return 'Choose an image that is not empty.';
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return 'Choose a JPG, PNG or WebP image.';
   return file.size > 5 * 1024 * 1024 ? 'Photos must be smaller than 5 MB.' : null;
 }

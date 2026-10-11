@@ -95,8 +95,20 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
         const { error } = await db.storage.from('dog-photos').upload(path, photo, { upsert: false, contentType: photo.type });
         if (error) throw new Error(error.message);
       }
-      // Retain previous objects: a failed/ambiguous network response must never delete an image a committed record references.
-      await rpc('save_dog', { p_id: id, p_name: dog.name, p_photo: path, p_archived: dog.is_archived || false });
+      // Initial uploads remain intact on ambiguous creation responses. Existing
+      // photos are changed only through replacePhoto, never a stale profile save.
+      await rpc('save_dog', { p_id: id, p_name: dog.name, p_photo: path, p_archived: dog.is_archived || false, p_breed: dog.breed?.trim() || null });
+    },
+    async replacePhoto(dog, photo) {
+      const validation = photoError(photo); if (validation) throw new Error(validation);
+      const body = new FormData(); body.set('dogId', dog.id); body.set('expectedPath', dog.photo_path || ''); body.set('photo', photo);
+      const { data, error } = await db.functions.invoke('replace-dog-photo', { body });
+      if (error) {
+        let message = 'Photo replacement could not be confirmed. Review the refreshed photo before trying again.';
+        try { message = (await error.context?.json())?.error || message; } catch { /* retain reconciliation guidance */ }
+        throw new Error(message);
+      }
+      if (!data?.saved) throw new Error('Photo replacement was not confirmed. Refresh and try again.');
     },
     async signOut() { clearCaches(); const { error } = await db.auth.signOut(); if (error) throw error; },
   };

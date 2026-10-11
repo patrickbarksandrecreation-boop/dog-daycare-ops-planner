@@ -13,5 +13,6 @@ export interface Repository {
   markers(dog: string, groomed: boolean, noWaterpark: boolean, version: number): Promise<void>;
   assignRun(day: string, group: string, run: Run | null, version: number): Promise<void>;
   saveDog(dog: Partial<Dog> & { name: string }, photo?: File): Promise<void>;
+  replacePhoto(dog: Dog, photo: File): Promise<void>;
   signOut(): Promise<void>;
 }

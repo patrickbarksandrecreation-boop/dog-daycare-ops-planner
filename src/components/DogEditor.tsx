@@ -8,6 +8,7 @@ export function DogEditor({ dog, dogs, save, close, editable }: {
   close: () => void; editable: boolean;
 }) {
   const [name, setName] = useState(dog.name || '');
+  const [breed, setBreed] = useState(dog.breed || '');
   const [photo, setPhoto] = useState<File>();
   const [error, setError] = useState('');
   const [archived, setArchived] = useState(dog.is_archived || false);
@@ -18,7 +19,7 @@ export function DogEditor({ dog, dogs, save, close, editable }: {
     <form onSubmit={async event => {
       event.preventDefault();
       if (!editable || !name.trim() || (needsAcknowledgement && !acknowledged)) return;
-      if (await save({ ...dog, name: name.trim(), is_archived: archived }, photo)) close();
+      if (await save({ ...dog, name: name.trim(), breed: breed.trim() || null, is_archived: archived }, photo)) close();
     }}>
       <label>Dog’s name<input autoFocus maxLength={80} required value={name}
         onChange={e => { setName(e.target.value); setAcknowledged(false); }}/></label>
@@ -26,11 +27,13 @@ export function DogEditor({ dog, dogs, save, close, editable }: {
         <p>A dog named {name.trim()} already exists. Use Dog database to book the existing dog.</p>
         <label className="check-label"><input type="checkbox" checked={acknowledged} onChange={e => setAcknowledged(e.target.checked)}/>This is a different dog with the same name</label>
       </div>}
-      <label>Photo (optional)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => {
+      <label>Breed (optional)<input maxLength={160} value={breed} placeholder="Full breed, mixed breed or unknown" onChange={e => setBreed(e.target.value)}/></label>
+      {!dog.id && <><label>Photo (optional)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => {
         const file = e.target.files?.[0]; const message = file ? photoError(file) : null;
         setError(message || ''); setPhoto(message ? undefined : file);
       }}/></label>
-      <small>JPG, PNG or WebP · up to 5 MB.</small>
+      <small>JPG, PNG or WebP · up to 5 MB.</small></>}
+      {dog.id && <p className="muted">Use Change photo in dog information to replace the photograph.</p>}
       {dog.id && <label className="check-label"><input type="checkbox" checked={archived} onChange={e => setArchived(e.target.checked)}/>Archive this dog</label>}
       <p className="muted">{dog.id ? 'Saved plans and attendance records are retained.' : 'Creates a database record. Book this dog for a date separately.'}</p>
       {error && <p className="error" role="alert">{error}</p>}

@@ -31,7 +31,7 @@ There are 110 fictional master dog records, so ten remain unbooked and can be fo
 5. **Mark departed** hides a Present dog from active lanes and retains its last group and timestamps in **Day records**. **Undo departure** corrects a mistake by restoring Present in the previous location.
 6. Expected bookings can be removed with confirmation. Manager **Clear expected bookings** removes only Expected records and retains Present/Departed history.
 7. Every enrolled shared-session participant uses **+ New Dog** to create a master record. Matching names require explicit acknowledgement that this is a different dog. The database opens filtered to the new name, ready to book it separately. Creation never silently books or receives a dog.
-8. Manager-only existing dog editing, photo replacement and archiving remain accessible through the database or dog details. Archiving preserves saved references. Unarchiving is currently a database-administrator action.
+8. Managers edit existing names/breeds and archive profiles. All enrolled staff can use **Change photo** in dog information or **Photo** in the database. Archiving preserves saved references. Unarchiving is currently a database-administrator action.
 9. Group pencils rename inline; optionally save the default for newly opened days. Already-created dates retain their label snapshots. Navigate dates or use **Today** in Australia/Brisbane; yesterday's records are never copied automatically.
 10. On phones, group tabs switch views. With a card selected they become destinations; a drag can also drop on a tab. The horizontally scrollable Unassigned strip remains available above them.
 
@@ -49,7 +49,7 @@ Workspace-scoped persistence is documented in [M3-PERSISTENCE.md](docs/M3-PERSIS
 2. For a new synthetic project, apply the migrations in filename order and the fictional demo seed. Enable and save **Allow anonymous sign-ins** in Supabase Authentication settings.
 3. Copy .env.example to ignored .env.local and set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Use only the public publishable key, never a secret/service-role key or password. Restart Vite after changes. Configure the same two public build variables in Netlify.
 4. Enter a display name and join the shared pilot. The browser retains its anonymous session. Enrollment grants staff access only to the enabled synthetic workspace. Display names and anonymous sessions do not verify employee identity.
-5. Managers remain administrator-provisioned; ordinary participants can create active master dogs with an optional photo, book dogs, move them, mark attendance and edit markers/runs. Existing profile edits, archiving, photo replacement/deletion, group renaming and clearing bookings remain manager-only.
+5. Managers remain administrator-provisioned; ordinary participants can create active master dogs with optional breed/photo, replace photos, book dogs, move them, mark attendance and edit markers/runs. Existing name/breed edits, archiving, group renaming and clearing remain manager-only. Photo replacement requires the pending migration and Edge Function described in [DOG-CARDS-PHOTOS.md](docs/DOG-CARDS-PHOTOS.md).
 6. New dates are empty. Use Dog database → Book for day. There is no external booking integration.
 
 ### Realtime, security and photos
@@ -67,7 +67,7 @@ where pubname = 'supabase_realtime';
 
 Mutations briefly lock the day row and use the individual record version. A move changes location/order only; attendance changes status/timestamps only. A simultaneous move and arrival with the same version produces one success and one explicit conflict, then the client refreshes. Clear checks the day revision captured at confirmation and only removes Expected bookings.
 
-The private `dog-photos` bucket accepts JPEG, PNG and WebP up to 5 MB. Staff can upload a photo while creating a new dog, before its master record is saved. Uploads under existing dogs and photo deletion remain manager-only; staff receive one-hour signed URLs. Keep the bucket private. Old replacement objects are retained to avoid deleting a photo after an ambiguous save; administrators can remove unreferenced objects after a retention period. Signed URLs may remain valid until expiry after sign-out. See [private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals).
+The private `dog-photos` bucket accepts JPEG, PNG and WebP up to 5 MB. Staff can upload an initial photo before creating a dog. Existing-dog replacement uses the authenticated `replace-dog-photo` Edge Function: a unique image uploads, a checked transaction updates the dog, then the Storage API removes retired images. Clients have no direct delete permission, including managers. Failed/abandoned replacements enter a delayed cleanup queue; immutable retired paths cannot be restored by stale edits. Realtime refresh signs each new path independently. Signed URLs may remain valid until expiry after sign-out. See [release steps and cleanup](docs/DOG-CARDS-PHOTOS.md) and [private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals).
 
 ## Connectivity and persistence
 

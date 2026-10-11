@@ -1,5 +1,5 @@
 import type { Assignment, Dog, Snapshot } from './model';
-import { lane, todayBrisbane, runs } from './model';
+import { lane, todayBrisbane, runs, photoError } from './model';
 import type { Repository } from './repository';
 export type DemoScenario = 'morning' | 'planned' | 'four';
 export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
@@ -8,6 +8,7 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
   const dogs: Dog[] = Array.from({ length: 110 }, (_, i) => ({
     id: `demo-${i}`, name: i < 20 ? names[i] : `${names[i % 20]} ${surnames[Math.floor(i / 20) - 1]}`,
     photo_path: null, is_archived: false,
+    breed: i % 5 === 0 ? null : ['Border Collie', 'Golden Retriever', 'Mixed breed', 'German Shepherd Dog'][i % 4],
   }));
   const groups = Array.from({ length: scenario === 'four' ? 4 : 3 }, (_, i) => ({
     group_id: `group-${i + 1}`, displayed_name: `Group ${i + 1}`, display_order: i + 1,
@@ -105,10 +106,18 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
     async saveDog(input, photo) {
       const existing = dogs.find(d => d.id === input.id);
       const dog: Dog = { id: input.id || crypto.randomUUID(), name: input.name.trim(), photo_path: null,
+        breed: input.breed?.trim() || null,
         is_archived: input.is_archived || false,
         photo_url: photo ? URL.createObjectURL(photo) : existing?.photo_url };
       if (existing) Object.assign(existing, dog); else dogs.push(dog);
       changed();
+    },
+    async replacePhoto(input, photo) {
+      const error = photoError(photo); if (error) throw new Error(error);
+      const dog = dogs.find(d => d.id === input.id);
+      if (!dog || dog.photo_url !== input.photo_url) throw new Error('Photo changed. Refresh and try again.');
+      if (dog.photo_url?.startsWith('blob:')) URL.revokeObjectURL(dog.photo_url);
+      dog.photo_url = URL.createObjectURL(photo); changed();
     },
     async signOut() {},
   };

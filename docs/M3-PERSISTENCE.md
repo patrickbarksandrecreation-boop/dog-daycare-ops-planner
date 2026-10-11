@@ -22,8 +22,8 @@ Reuse the existing Supabase client, snapshot RPC, Realtime reconciliation and bo
 |---|---|---|
 | Unauthenticated `anon` | No board, membership, history or photos | None |
 | Authenticated without membership | No workspace data | RPCs reject membership absence |
-| Workspace staff | Own profile; own workspace, dogs, days, areas, placements, events and photos | Create active dogs and upload their initial photo; book, move, arrival, departure, remove Expected through checked RPCs |
-| Workspace manager | Same scoped reads | Staff operations plus existing master dog editing/archive, scoped photo replacement/delete, area rename, clear Expected |
+| Workspace staff | Own profile; own workspace, dogs, days, areas, placements, events and photos | Create active dogs with optional breed/photo; scoped photo replacement through Edge Function; book, move, arrival, departure, remove Expected through checked RPCs |
+| Workspace manager | Same scoped reads | Staff operations plus existing master name/breed editing/archive, area rename, clear Expected. No direct Storage deletion after the photo migration. |
 | Another workspace's member | No rows from the first workspace | Foreign IDs rejected by scoped RPC checks and composite constraints |
 | Database administrator | Privileged administrative access | Workspace creation/membership provisioning and migrations; never browser credentials |
 

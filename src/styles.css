@@ -269,3 +269,38 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .database-row { flex-wrap:wrap; }
   .database-row strong { flex-basis:calc(100% - 45px); }
 }
+
+
+
+/* Desktop panels share the available width and grow with their contents. */
+.lane-layout { display:contents; }
+.panel-resize { display:none; }
+@media(min-width:761px) {
+  .planner-shell { height:auto; min-height:100dvh; }
+  .lane-layout { display:grid; grid-template-columns:var(--panel-columns); gap:14px; align-items:start; flex:1; }
+  .lane-layout > .selection-bar { grid-column:1 / -1; grid-row:1; }
+  .lane-layout > .unassigned, .lane-layout .group-wrapper { grid-row:2; min-width:0; position:relative; min-height:var(--panel-min-height, 240px); }
+  .lane-layout > .unassigned { grid-column:1; padding-bottom:22px; }
+  .lane-layout > .group-board { display:contents; }
+  .lane-layout .group-lane { height:auto; min-height:var(--panel-min-height, 240px); padding-bottom:22px; }
+  .lane-layout .group-grid, .lane-layout .unassigned-cards { grid-auto-flow:row; grid-template-rows:none; grid-auto-columns:auto; overflow:visible; min-height:0; align-content:start; }
+  .lane-layout .group-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,100px),1fr)); }
+  .lane-layout .unassigned-cards { grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); padding:8px; }
+  .lane-layout .strip-empty { grid-column:1 / -1; grid-row:auto; width:auto; max-width:100%; padding:12px 0; }
+  .lane-layout .unassigned-toolbar { flex-wrap:wrap; gap:8px; padding:8px; }
+  .lane-layout .unassigned .search { width:100%; }
+  .lane-layout .directory-tools { flex-wrap:wrap; margin-left:0; }
+  .lane-layout .group-heading { flex-wrap:wrap; }
+  .lane-layout .group-destination { flex-direction:column; align-items:flex-start; }
+  .lane-layout .run-select { width:100%; }
+  .lane-layout .warning-bar { height:auto; min-height:23px; }
+  .panel-resize { display:flex; position:absolute; right:2px; bottom:2px; width:22px; height:20px; min-height:20px; padding:0; border:0; background:transparent; color:#637369; cursor:nwse-resize; touch-action:none; user-select:none; z-index:2; }
+  .panel-resize:hover { background:#ffffffaa; }
+}
+
+@media(min-width:761px) {
+  .lane-layout .group-heading, .lane-layout .unassigned-toolbar { padding-right:30px; }
+  .panel-width-resize { top:5px; bottom:auto; cursor:ew-resize; }
+}
+
+@media(min-width:761px) { .lane-layout .indicator-slot:empty { display:none; } }

@@ -22,6 +22,7 @@ import { DogEditor } from './components/DogEditor';
 import { PhotoEditor } from './components/PhotoEditor';
 import { matchesDog, shortDogNames } from './dogLabels';
 import { GroupLane } from './components/GroupLane';
+import { PanelResize, usePanelSizes } from './components/PanelResize';
 
 function DestinationTab({ id, name, active, moving, choose, summary }: {
   id: string; name: string; active: boolean; moving: boolean; choose: () => void; summary: string;
@@ -33,13 +34,13 @@ function DestinationTab({ id, name, active, moving, choose, summary }: {
     <span>{name}</span><small>{summary}</small>
   </button>;
 }
-function Unassigned({ count, search, setSearch, selected, move, children, tools }: {
+function Unassigned({ count, search, setSearch, selected, move, children, tools, resize, style }: {
   count: number; search: string; setSearch: (s: string) => void; selected: boolean;
-  move: () => void; children: ReactNode; tools: ReactNode;
+  move: () => void; children: ReactNode; tools: ReactNode; resize: ReactNode; style: CSSProperties;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unassigned' });
   return <section ref={setNodeRef} className={`unassigned ${selected ? 'valid-target' : ''} ${isOver ? 'drop-over' : ''}`}
-    data-testid="lane-unassigned" onClick={event => {
+    data-testid="lane-unassigned" data-panel-id="unassigned" style={style} onClick={event => {
       if (selected && !(event.target as HTMLElement).closest('button,input,article')) move();
     }}>
     <div className="unassigned-toolbar">
@@ -52,6 +53,7 @@ function Unassigned({ count, search, setSearch, selected, move, children, tools 
       <div className="directory-tools">{tools}</div>
     </div>
     <div className="unassigned-cards">{children}</div>
+    {resize}
   </section>;
 }
 function Rename({ group, submit, close, editable }: {
@@ -76,6 +78,7 @@ const collision: CollisionDetection = args => {
 
 export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void }) {
   const [date, setDate] = useState(todayBrisbane());
+  const panels = usePanelSizes();
   const { snapshot: state, profile, connection, busy, error, setError, run, refresh, editable } = usePlanner(repo, date);
   const [view, setView] = useState('group-1');
   const [search, setSearch] = useState('');
@@ -196,49 +199,53 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       <DndContext sensors={sensors} collisionDetection={collision}
         onDragStart={event => { setSelection(null); setDrag(state.assignments.find(a => a.id === event.active.id) || null); }}
         onDragCancel={() => setDrag(null)} onDragEnd={onDrop}>
-        <Unassigned count={totals.unassigned} search={search} setSearch={setSearch} selected={!!selection && editable}
-          move={() => { if (selection) void move(selection, null); }}
-          tools={<><button onClick={() => setDatabase(true)}><Database size={16}/>Dog database</button>
-            <button className="primary" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/>New Dog</button></>}>
-          {cards(null)}
-        </Unassigned>
-        <div className={`selection-bar ${selection ? 'has-selection' : ''}`}>
-          <span>{selection ? <><strong>{selectedName}</strong> selected · choose a destination</> : 'Select a dog, then a group · Drag by the grip · Hold a card for details'}</span>
-          {selection && <button className="text-button" aria-label="Cancel selection" onClick={() => setSelection(null)}><X size={14}/>Cancel</button>}
-          <small>{repo.demo ? 'Fictional bookings, attendance & rules' : 'Synthetic pilot · no real records'}</small>
+        <div className="lane-layout" ref={panels.layoutRef} style={panels.columns(['unassigned', ...state.groups.map(g => g.group_id)])}>
+          <Unassigned style={panels.style('unassigned')} resize={<><PanelResize id="unassigned" name="Unassigned" resize={panels.resize}/><PanelResize id="unassigned" name="Unassigned" resize={panels.resize} widthOnly/></>} count={totals.unassigned} search={search} setSearch={setSearch} selected={!!selection && editable}
+            move={() => { if (selection) void move(selection, null); }}
+            tools={<><button onClick={() => setDatabase(true)}><Database size={16}/>Dog database</button>
+              <button className="primary" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/>New Dog</button></>}>
+            {cards(null)}
+          </Unassigned>
+          <div className={`selection-bar ${selection ? 'has-selection' : ''}`}>
+            <span>{selection ? <><strong>{selectedName}</strong> selected · choose a destination</> : 'Select a dog, then a group · Drag by the grip · Hold a card for details'}</span>
+            {selection && <button className="text-button" aria-label="Cancel selection" onClick={() => setSelection(null)}><X size={14}/>Cancel</button>}
+            <small>{repo.demo ? 'Fictional bookings, attendance & rules' : 'Synthetic pilot · no real records'}</small>
+          </div>
+          <nav className={`group-tabs ${selection || drag ? 'moving' : ''}`} aria-label="Group views and destinations">
+            <DestinationTab id="unassigned" name="Unassigned" active={view === 'unassigned'} moving={!!selection || !!drag}
+              summary={String(totals.unassigned)} choose={() => selection ? void move(selection, null) : setView('unassigned')}/>
+            {state.groups.map(g => {
+              const c = groupCounts(state.assignments, g.group_id);
+              return <DestinationTab key={g.group_id} id={g.group_id} name={g.displayed_name} active={view === g.group_id}
+                moving={!!selection || !!drag} summary={`${c.present} / ${c.planned}`}
+                choose={() => selection ? void move(selection, g.group_id) : setView(g.group_id)}/>;
+            })}
+          </nav>
+          <main className={`group-board ${view === 'unassigned' ? 'view-unassigned' : ''}`}
+            style={{ '--group-count': state.groups.length } as CSSProperties}>
+            {state.groups.map(g => {
+              const c = groupCounts(state.assignments, g.group_id);
+              return <div key={g.group_id} className={`group-wrapper ${view === g.group_id ? 'current-view' : ''}`} data-panel-id={g.group_id} style={panels.style(g.group_id)}>
+                <GroupLane id={g.group_id} name={g.displayed_name} order={g.display_order} present={c.present} planned={c.planned}
+                  selected={!!selection && editable} dragging={!!drag} destination={() => { if (selection) void move(selection, g.group_id); }}
+                  rename={manager && editable ? () => setRename(rename === g.group_id ? null : g.group_id) : undefined}
+                  warnings={[...groupConflicts(state.assignments, g.group_id, rules), ...runWarnings(state.assignments, state.dogs, g)]}
+                  showWarnings={() => setAlertGroup(g.group_id)}
+                  runSelector={<select className="run-select" aria-label={`Run for ${g.displayed_name}`} value={g.run || ''} disabled={!editable}
+                    onChange={e => void run(() => repo.assignRun(state.day.id, g.group_id, (e.target.value || null) as Run | null, g.run_version || 1))}>
+                    <option value="">Select run…</option>{runs.map(r => <option key={r}>{r}</option>)}
+                  </select>}
+                  editor={rename === g.group_id ? <Rename group={g} editable={editable} close={() => setRename(null)}
+                    submit={(name, future) => run(() => repo.rename(state.day.id, g.group_id, name, future))}/> : undefined}>
+                  {cards(g.group_id)}
+                </GroupLane>
+                <PanelResize id={g.group_id} name={g.displayed_name} resize={panels.resize}/>
+                <PanelResize id={g.group_id} name={g.displayed_name} resize={panels.resize} widthOnly/>
+              </div>;
+            })}
+            <p className="unassigned-view-note">Choose a dog in the strip above, then tap its destination. Swipe the strip to see more bookings.</p>
+          </main>
         </div>
-        <nav className={`group-tabs ${selection || drag ? 'moving' : ''}`} aria-label="Group views and destinations">
-          <DestinationTab id="unassigned" name="Unassigned" active={view === 'unassigned'} moving={!!selection || !!drag}
-            summary={String(totals.unassigned)} choose={() => selection ? void move(selection, null) : setView('unassigned')}/>
-          {state.groups.map(g => {
-            const c = groupCounts(state.assignments, g.group_id);
-            return <DestinationTab key={g.group_id} id={g.group_id} name={g.displayed_name} active={view === g.group_id}
-              moving={!!selection || !!drag} summary={`${c.present} / ${c.planned}`}
-              choose={() => selection ? void move(selection, g.group_id) : setView(g.group_id)}/>;
-          })}
-        </nav>
-        <main className={`group-board ${view === 'unassigned' ? 'view-unassigned' : ''}`}
-          style={{ '--group-count': state.groups.length } as CSSProperties}>
-          {state.groups.map(g => {
-            const c = groupCounts(state.assignments, g.group_id);
-            return <div key={g.group_id} className={`group-wrapper ${view === g.group_id ? 'current-view' : ''}`}>
-              <GroupLane id={g.group_id} name={g.displayed_name} order={g.display_order} present={c.present} planned={c.planned}
-                selected={!!selection && editable} dragging={!!drag} destination={() => { if (selection) void move(selection, g.group_id); }}
-                rename={manager && editable ? () => setRename(rename === g.group_id ? null : g.group_id) : undefined}
-                warnings={[...groupConflicts(state.assignments, g.group_id, rules), ...runWarnings(state.assignments, state.dogs, g)]}
-                showWarnings={() => setAlertGroup(g.group_id)}
-                runSelector={<select className="run-select" aria-label={`Run for ${g.displayed_name}`} value={g.run || ''} disabled={!editable}
-                  onChange={e => void run(() => repo.assignRun(state.day.id, g.group_id, (e.target.value || null) as Run | null, g.run_version || 1))}>
-                  <option value="">Select run…</option>{runs.map(r => <option key={r}>{r}</option>)}
-                </select>}
-                editor={rename === g.group_id ? <Rename group={g} editable={editable} close={() => setRename(null)}
-                  submit={(name, future) => run(() => repo.rename(state.day.id, g.group_id, name, future))}/> : undefined}>
-                {cards(g.group_id)}
-              </GroupLane>
-            </div>;
-          })}
-          <p className="unassigned-view-note">Choose a dog in the strip above, then tap its destination. Swipe the strip to see more bookings.</p>
-        </main>
         <DragOverlay style={{ pointerEvents: 'none' }}>{drag && <div className="drag-preview"><Avatar dog={dogsById.get(drag.dog_id)!}/><strong>{dogsById.get(drag.dog_id)!.name}</strong><span>{drag.attendance_status}</span></div>}</DragOverlay>
       </DndContext>}
     <footer className="planner-footer"><span>{repo.demo ? 'Demo resets on refresh.' : 'Synthetic shared pilot.'} Assignment does not mark arrival.</span>

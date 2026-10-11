@@ -50,9 +50,10 @@ This iteration has deterministic, explicitly fictional pair rules and handling n
 
 ### Layout
 
-- Compact top area: unassigned-only search, separate database search/access, visible **+ New Dog**, and an unassigned card strip.
-- Three tall side-by-side group columns on desktop. Render from group data; support a fourth without hardcoded UI branches.
-- Responsive photo-first tile grids: five columns per group at 1920px with three groups, two columns at 390px. Legible short names, optional compact breed labels, warning/marker icons, arrival action and visible selection/drag states. Full names/breeds remain in details; repeated short names gain an initial and, if needed, a stable numbered suffix.
+- Desktop: Unassigned and the groups sit side by side. Each panel has a top width handle and a bottom corner handle, with arrow-key resizing. Widening a panel redistributes available space among its neighbours, with minimum widths to prevent overlap. Width and minimum-height choices belong to the current browser session, not the shared plan.
+- Panels automatically grow downward to fit all dogs; scroll the entire page rather than scrolling inside desktop lanes. Cards wrap into as many columns as the panel fits. Reducing height cannot hide dogs. Render from group data; support a fourth without hardcoded UI branches.
+- Unassigned retains its own search, separate database access and visible **+ New Dog**. Phones retain the horizontal card strip and group tabs with no resize controls.
+- Responsive photo-first group tiles reflow with panel widths; Unassigned retains compact cards. Legible short names, compact breed labels, warning/marker icons, arrival actions and selection/drag states remain. Full names and breeds stay available in details, and repeated short names remain distinguishable.
 - Compact headings with group name, Present / Planned counts and warning area.
 - Target at least approximately 70 fully visible group cards at 1920 × 1080 and 100% zoom. Measure card rectangles, not a visual impression. No forced zoom.
 - Phones around 390px use group switching and a persistent destination chooser when selected/dragging; Unassigned remains readily reachable. Same operations remain available.

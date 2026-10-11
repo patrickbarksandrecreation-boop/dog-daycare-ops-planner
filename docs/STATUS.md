@@ -1,5 +1,11 @@
 # Implementation status
 
+## Editable group names (branch work, 11 October 2026)
+
+`codex/editable-group-names` enables the existing pencil/name form for all enrolled staff on an editable board. Opening it clears the dog selection. Names are trimmed and limited to 1–40 characters; Cancel discards edits, and the optional future-day default remains available. Additive migration `20261011103159_staff_group_names.sql` permits staff rename RPCs while retaining day locking, workspace/membership checks, scoped updates and anonymous execution denial. Earlier staff-rename denial notes below describe the deployed release.
+
+Local verification: 64 unit/database tests, production build, and two focused Chromium rename tests passed. The migration has not been applied to the hosted database and this branch has not been deployed. Next release step: review and apply the migration before publishing the frontend, then verify staff renaming in two hosted sessions.
+
 Verified 11 October 2026. [WORKFLOW.md](WORKFLOW.md) governs the approved board; [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md) governs authentication and enrollment. The owner approved anonymous sessions, cloud changes and deployment.
 
 ## Ready and verified

@@ -38,6 +38,7 @@ beforeAll(async()=>{
   await q('select public.save_dog($1,$2,null,false)',[otherDog,'Other synthetic Luna']);
   otherGroup=(await state()).groups[0].group_id;
   await user(u1); group=(await state()).groups[0].group_id;
+
 });
 afterAll(async()=>{await db?.close();});
 describe.sequential('M3 workspace isolation and transactional history',()=>{
@@ -252,5 +253,32 @@ describe.sequential('M3 workspace isolation and transactional history',()=>{
     await db.exec('reset role');
     expect((await q("select public from storage.buckets where id='dog-photos'"))[0].public).toBe(false);
     await user(u1);
+  });
+  it('allows staff group names while enforcing workspace, membership and validation',async()=>{
+    await db.exec('reset role');
+    await db.exec(readFileSync('supabase/migrations/20261011103159_staff_group_names.sql','utf8'));
+    await user(stranger);
+    const previous=(await state()).groups.find((g:any)=>g.group_id===group).displayed_name;
+    const revision=(await state()).day.revision;
+    await q('select public.rename_group($1,$2,$3,false)',[day,group,'  Gentle souls  ']);
+    expect((await state()).groups.find((g:any)=>g.group_id===group).displayed_name).toBe('Gentle souls');
+    expect((await state()).day.revision).toBe(revision+1);
+    for(const name of [null,'   ','x'.repeat(41)]) {
+      await expect(q('select public.rename_group($1,$2,$3,false)',[day,group,name])).rejects.toThrow(/1 to 40/);
+    }
+    await expect(q('select public.rename_group($1,$2,$3,true)',[day,otherGroup,'Foreign'])).rejects.toThrow(/Group not found/);
+    await expect(q('select public.rename_group($1,$2,$3,true)',[otherDay,otherGroup,'Foreign'])).rejects.toThrow(/unavailable/);
+    await q('select public.rename_group($1,$2,$3,true)',[day,group,'Quiet pack']);
+    await q("select public.ensure_planning_day('2038-01-01')");
+    const future=(await q("select public.planning_snapshot('2038-01-01') s"))[0].s;
+    expect(future.groups.find((g:any)=>g.group_id===group).displayed_name).toBe('Quiet pack');
+    await user(u1);
+    expect((await state()).groups.find((g:any)=>g.group_id===group).displayed_name).toBe('Quiet pack');
+    await user('10000000-0000-4000-8000-000000000004');
+    await expect(q('select public.rename_group($1,$2,$3,false)',[day,group,'Revoked'])).rejects.toThrow(/staff/);
+    await user(stranger,'anon');
+    await expect(q('select public.rename_group($1,$2,$3,false)',[day,group,'Anonymous'])).rejects.toThrow(/permission denied/);
+    await user(u1);
+    await q('select public.rename_group($1,$2,$3,true)',[day,group,previous]);
   });
 });

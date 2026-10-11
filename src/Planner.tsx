@@ -224,7 +224,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
             return <div key={g.group_id} className={`group-wrapper ${view === g.group_id ? 'current-view' : ''}`}>
               <GroupLane id={g.group_id} name={g.displayed_name} order={g.display_order} present={c.present} planned={c.planned}
                 selected={!!selection && editable} dragging={!!drag} destination={() => { if (selection) void move(selection, g.group_id); }}
-                rename={manager && editable ? () => setRename(rename === g.group_id ? null : g.group_id) : undefined}
+                rename={editable ? () => { setSelection(null); setRename(rename === g.group_id ? null : g.group_id); } : undefined}
                 warnings={[...groupConflicts(state.assignments, g.group_id, rules), ...runWarnings(state.assignments, state.dogs, g)]}
                 showWarnings={() => setAlertGroup(g.group_id)}
                 runSelector={<select className="run-select" aria-label={`Run for ${g.displayed_name}`} value={g.run || ''} disabled={!editable}

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Dog, Profile, Snapshot } from './model';
 import { photoError } from './model';
 import type { Repository } from './repository';
@@ -7,8 +7,18 @@ const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const client = url && key && !url.includes('YOUR_PROJECT') ? createClient(url, key, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 }) : null;
-export function cloudRepository(): Repository {
-  const db = client!;
+export function cloudRepository(db: SupabaseClient = client!): Repository {
+  // Session-scoped, memory-only caches: never persist private roster or photo URLs.
+  const preparedDates = new Map<string, Promise<unknown>>();
+  const photoLinks = new Map<string, { url: string; expires: number }>();
+  const clearCaches = () => { preparedDates.clear(); photoLinks.clear(); };
+  let cacheUser: string | undefined;
+  async function sessionUser() {
+    const { data: { session }, error } = await db.auth.getSession();
+    if (error || !session?.user) { clearCaches(); throw new Error('Please sign in again.'); }
+    if (cacheUser !== session.user.id) { clearCaches(); cacheUser = session.user.id; }
+    return session.user;
+  }
   async function rpc<T = void>(name: string, args: Record<string, unknown> = {}): Promise<T> {
     const { data, error } = await db.rpc(name, args);
     if (error) throw new Error(error.message);
@@ -17,14 +27,21 @@ export function cloudRepository(): Repository {
   return {
     demo: false,
     async profile() {
-      const { data: { user } } = await db.auth.getUser();
-      if (!user) throw new Error('Please sign in again.');
+      // The session ID selects a row; RLS and every planner RPC still verify access on the server.
+      const user = await sessionUser();
       const { data, error } = await db.from('staff_profiles').select('id,display_name,role,workspace_id').eq('id', user.id).single();
       if (error || !data) throw new Error('Your account needs staff access. Ask your manager to add your staff profile.');
       return data as Profile;
     },
     async snapshot(date) {
-      await rpc('ensure_planning_day', { p_date: date });
+      await sessionUser();
+      if (!preparedDates.has(date)) {
+        const preparation = rpc('ensure_planning_day', { p_date: date }).catch(error => {
+          preparedDates.delete(date); throw error;
+        });
+        preparedDates.set(date, preparation);
+      }
+      await preparedDates.get(date);
       const state = await rpc<Snapshot>('planning_snapshot', { p_date: date });
       if (!('workspace_id' in state.day)) {
         throw new Error('Apply 003_workspace_history.sql before using the shared pilot.');
@@ -35,8 +52,16 @@ export function cloudRepository(): Repository {
       }
       const paths = [...new Set(state.dogs.map(d => d.photo_path).filter((p): p is string => !!p))];
       if (paths.length) {
-        const { data } = await db.storage.from('dog-photos').createSignedUrls(paths, 3600);
-        for (const dog of state.dogs) dog.photo_url = data?.find(p => p.path === dog.photo_path)?.signedUrl || undefined;
+        const now = Date.now();
+        for (const [path, link] of photoLinks) if (link.expires <= now || !paths.includes(path)) photoLinks.delete(path);
+        const missing = paths.filter(path => !photoLinks.has(path));
+        if (missing.length) {
+          const { data } = await db.storage.from('dog-photos').createSignedUrls(missing, 3600);
+          for (const link of data || []) if (link.path && link.signedUrl && !link.error) {
+            photoLinks.set(link.path, { url: link.signedUrl, expires: now + 55 * 60_000 });
+          }
+        }
+        for (const dog of state.dogs) dog.photo_url = dog.photo_path ? photoLinks.get(dog.photo_path)?.url : undefined;
       }
       return state;
     },
@@ -46,7 +71,6 @@ export function cloudRepository(): Repository {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'dogs' }, changed)
         .subscribe(state => {
           status(state === 'SUBSCRIBED' ? 'online' : state === 'CHANNEL_ERROR' || state === 'TIMED_OUT' || state === 'CLOSED' ? 'offline' : 'connecting');
-          if (state === 'SUBSCRIBED') changed();
         });
       return () => { void db.removeChannel(channel); };
     },
@@ -74,6 +98,6 @@ export function cloudRepository(): Repository {
       // Retain previous objects: a failed/ambiguous network response must never delete an image a committed record references.
       await rpc('save_dog', { p_id: id, p_name: dog.name, p_photo: path, p_archived: dog.is_archived || false });
     },
-    async signOut() { const { error } = await db.auth.signOut(); if (error) throw error; },
+    async signOut() { clearCaches(); const { error } = await db.auth.signOut(); if (error) throw error; },
   };
 }

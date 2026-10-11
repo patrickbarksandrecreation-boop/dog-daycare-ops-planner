@@ -11,6 +11,7 @@ export function usePlanner(repo: Repository, date: string) {
   const [retry, setRetry] = useState(0);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   const busyRef = useRef(false);
+  const writePendingRef = useRef(false);
   useEffect(() => {
     const changed = () => setBrowserOnline(navigator.onLine);
     window.addEventListener('online', changed); window.addEventListener('offline', changed);
@@ -29,8 +30,7 @@ export function usePlanner(repo: Repository, date: string) {
         while (dirty && active) {
           dirty = false;
           try {
-            const user = await repo.profile();
-            const state = await repo.snapshot(date);
+            const [user, state] = await Promise.all([repo.profile(), repo.snapshot(date)]);
             if (active) {
               setProfile(user); setSnapshot(state);
               setConnection(subscribed ? 'online' : 'connecting');
@@ -44,7 +44,13 @@ export function usePlanner(repo: Repository, date: string) {
       return pending;
     }
     refreshRef.current = refresh;
-    const unsubscribe = browserOnline ? repo.watch(date, () => { void refresh(); }, status => {
+    let eventTimer: ReturnType<typeof setTimeout> | undefined;
+    const changed = () => {
+      // A local write always reconciles in run()'s finally block.
+      if (writePendingRef.current || eventTimer) return;
+      eventTimer = setTimeout(() => { eventTimer = undefined; if (!writePendingRef.current) void refresh(); }, 60);
+    };
+    const unsubscribe = browserOnline ? repo.watch(date, changed, status => {
       if (!active) return;
       subscribed = status === 'online';
       if (!subscribed) setConnection(status);
@@ -55,15 +61,15 @@ export function usePlanner(repo: Repository, date: string) {
     const poll = window.setInterval(() => { void refresh(); }, 30_000);
     const focus = () => { void refresh(); };
     window.addEventListener('focus', focus);
-    return () => { active = false; unsubscribe(); clearInterval(poll); window.removeEventListener('focus', focus); };
+    return () => { active = false; unsubscribe(); clearTimeout(eventTimer); clearInterval(poll); window.removeEventListener('focus', focus); };
   }, [repo, date, browserOnline, retry]);
   const run = useCallback(async (action: () => Promise<void>) => {
     if (busyRef.current || connection !== 'online' || !browserOnline) return false;
-    busyRef.current = true; setBusy(true); setError('');
+    busyRef.current = true; writePendingRef.current = true; setBusy(true); setError('');
     let saved = false;
     try { await action(); saved = true; }
     catch (e) { setError(`${e instanceof Error ? e.message : 'Unable to save.'} The board will refresh to confirm server state.`); }
-    finally { await refreshRef.current(); busyRef.current = false; setBusy(false); }
+    finally { writePendingRef.current = false; await refreshRef.current(); busyRef.current = false; setBusy(false); }
     return saved;
   }, [connection, browserOnline]);
   return { snapshot, profile, connection, busy, error, setError, run, refresh: () => setRetry(value => value + 1), editable: connection === 'online' && browserOnline && !busy };

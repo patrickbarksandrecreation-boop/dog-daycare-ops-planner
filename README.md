@@ -1,57 +1,118 @@
-# Dog Daycare Operations Planner
+# Dayboard — daily planning & arrivals
 
-Phone-friendly standalone demo with 100 deterministic fictional dogs. **DEMO / NOT LIVE:** all changes are in memory in the current browser tab and reset on reload. No backend, accounts, real records, or shared updates. Browser access needs no installation. The production app can optionally be added to the home screen and opened offline after its first successful online load and app-cache setup.
+A compact React + TypeScript board for one dog daycare workplace. Organise dogs before arrival, then track Expected, Present and Departed on the same board. Existing Supabase Auth, PostgreSQL, Realtime and private photo storage are preserved.
 
-Start with `docs/PRODUCT.md` and `docs/ROADMAP.md`. Codex should follow `AGENTS.md` for concise, scoped implementation. The early pilot uses 100 fictional dogs and is not a live safety record.
+**[docs/WORKFLOW.md](docs/WORKFLOW.md) is the approved operational source of truth.** It supersedes the initial brief's exclusion of attendance and demo compatibility warnings. See [STATUS.md](docs/STATUS.md) for verified progress and limitations.
 
-## Develop
+## Try the planner
 
-Use Node.js 22.12+ (verified with Node 24) and npm. No environment variables or credentials are required.
-
-```sh
-npm ci
-npm run dev
-```
-
-Use the catalog to add dogs to today's selection and choose a group. Use **Move** to change a dog's sole placement or mark it unassigned. Headings are editable; group identity stays stable. On phones, switch between Catalog, Groups, and Roster. The header count opens all selected dogs.
+Use Node.js 22+ and pnpm 11.19.0. Dependencies are pinned by the supplied lockfile.
 
 ```sh
-npm run lint
-npm run typecheck
-npm test
-npm run build
+npm install --global pnpm@11.19.0
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-Build output is in `dist/`. `npm run preview` serves it locally. The service worker is enabled only in production builds, over HTTPS (or localhost for testing). No deployment has been performed. See `docs/STATUS.md` for verified checks and the next slice.
+Open `http://127.0.0.1:5173`. Select a **Demo scenario**, then **Explore the demo**:
 
-## Open on a phone
+- **Morning:** all 100 fictional bookings start Expected and Unassigned.
+- **Planned day:** 90 dogs assigned to three groups, ten unassigned; a mixture of Expected and Present, with fictional planned/present conflicts.
+- **Four groups:** a future-layout fixture with four data-driven columns.
 
-- Open the shared **HTTPS URL supplied after an approved deployment** in your browser. No app store, account, or installation is required. The same URL opens the demo on desktop.
-- **Android / Chrome:** open the browser menu and choose **Add to Home screen** or **Install app**, if offered.
-- **iPhone / Safari:** choose **Share → Add to Home Screen → Add** (enable **Open as Web App** if offered). Menu wording varies by OS version.
-- Always expect **DEMO / NOT LIVE**. Each tab/device has its own temporary fictional board; this is not shared live attendance. Installing does not save dogs or headings.
+There are 110 fictional master dog records, so ten remain unbooked and can be found through Dog database. Demo changes last only for the session and reset on refresh. Demo is not shared persistence. The active Supabase project has the application migrations and 20 fictional master dogs. Anonymous access uses a display name. See [current status](docs/STATUS.md) for live acceptance and deployment evidence.
 
-## Offline use and updates
+## Everyday operation
 
-The app caches only its versioned HTML, scripts, styles, manifest and original icon assets. The “App saved on this device” notice confirms offline setup. First access requires a connection; browser storage eviction or clearing site data can remove offline support. Offline opening/reloading starts an empty demo, just like an online reload. Dog selections and headings are never written to storage.
+1. **Search unassigned** filters only active unassigned bookings for the selected day. **Dog database** searches master records separately; **Book for day** adds one Expected record to Unassigned. Existing bookings, including departed dogs, cannot be duplicated.
+2. Drag a card's grip, or select a card then a group/Unassigned. Select the same card again, press Escape or use Cancel to deselect. Keyboard users can select and activate the destination buttons, or use the dnd-kit keyboard grip controls. Moves never mark arrival or reset attendance.
+3. **Arrive** on an Expected card confirms physical receipt in one action. **Here** identifies Present dogs. Headings show **Present / Planned**; Planned means active Expected + Present in the group.
+4. Right-click, double-click, tap the information button, or hold a stationary card to open details. Movement/scrolling cancels the hold; the separate drag grip never starts the hold timer.
+5. **Mark departed** hides a Present dog from active lanes and retains its last group and timestamps in **Day records**. **Undo departure** corrects a mistake by restoring Present in the previous location.
+6. Expected bookings can be removed with confirmation. Manager **Clear expected bookings** removes only Expected records and retains Present/Departed history.
+7. Every enrolled shared-session participant uses **+ New Dog** to create a master record. Matching names require explicit acknowledgement that this is a different dog. The database opens filtered to the new name, ready to book it separately. Creation never silently books or receives a dog.
+8. Manager-only existing dog editing, photo replacement and archiving remain accessible through the database or dog details. Archiving preserves saved references. Unarchiving is currently a database-administrator action.
+9. Group pencils rename inline; optionally save the default for newly opened days. Already-created dates retain their label snapshots. Navigate dates or use **Today** in Australia/Brisbane; yesterday's records are never copied automatically.
+10. On phones, group tabs switch views. With a card selected they become destinations; a drag can also drop on a tab. The horizontally scrollable Unassigned strip remains available above them.
 
-Updates are checked when opening or returning focus to the app online. A new version waits while you work. **Reload & reset demo** applies it and explicitly discards that tab's temporary board; accepting in one tab does not automatically reload another. Closing all app tabs/windows also allows a waiting version to activate. Old app-cache revisions are removed during activation. Browser/home-screen installation remains optional.
+Amber demo warnings identify a planned conflict where at least one dog is Expected. Red identifies two incompatible demo dogs currently Present together. Moves, arrivals and departures recalculate warnings from confirmed composition. Demo notes and rules are explicitly fictional and keyed by stable IDs. **Cloud behaviour rules are not configured in this iteration; no warning is not a safety assessment.**
 
-## Deploy to Netlify — manual, approval required
+## Configure Supabase
 
-1. Review the `feat/m2-pwa-deployment` branch and approve the first public deployment. No hosting credentials or environment secrets are needed by the app.
-2. In Netlify, first look for an existing project connected to this repository and reuse it. Only if none exists, import the repository. Select the approved branch without merging to `main`. Use the repository root as base directory; `netlify.toml` sets Node 24, build command `npm run build`, and publish directory `dist`.
-3. Deploy, then copy the **actual HTTPS URL shown by Netlify**. Confirm its HTTPS certificate is active and HTTP redirects to HTTPS; if using a custom domain, complete Netlify's DNS/TLS setup and enforce HTTPS before sharing. Root-path hosting is required by the manifest and worker scope.
-4. Open that exact URL on Android and iPhone. Check the demo banner, add/move a fictional dog, reload (expected empty board), optionally add to the home screen, and reopen offline after the app-saved notice. Record the verified URL and results in `docs/STATUS.md` before calling M2's hosted-phone acceptance complete.
+Dog markers and physical group runs require [004_runs_markers.sql](supabase/migrations/004_runs_markers.sql) after migrations 001–003. Existing installations apply only missing migrations. Staff toggle Groomed/bathed and No water park in dog information, and choose each group's run in its heading. Both markers persist until cleared; run selection belongs to the selected date. Water park warnings distinguish Expected and Present dogs and remain advisory. See [WORKFLOW.md](docs/WORKFLOW.md).
 
-The configuration includes a non-forced SPA fallback (real assets take precedence), revalidation for HTML/manifest/icons, no-store for the worker, and immutable caching for Vite's content-hashed assets. Local preview does not emulate Netlify's CDN headers or prove HTTPS hosting.
+Staff dog creation requires `20261011050413_staff_dog_creation.sql` after the six earlier migrations. It is applied to the connected trial project; see STATUS.md for the cloud ledger. Creation inserts only and cannot overwrite an existing ID, including competing requests.
 
-## PWA regression check
+Workspace-scoped persistence is documented in [M3-PERSISTENCE.md](docs/M3-PERSISTENCE.md), including the access matrix and setup for multiple workspaces. No external booking integration exists.
+
+1. Follow [ANONYMOUS-PILOT.md](docs/ANONYMOUS-PILOT.md). The approved existing project already has migrations 001–004, anonymous enrollment, explicit HTTP conflict responses and staff dog creation. Do not replay applied migrations; cloud ledger versions are recorded in STATUS.md.
+2. For a new synthetic project, apply the migrations in filename order and the fictional demo seed. Enable and save **Allow anonymous sign-ins** in Supabase Authentication settings.
+3. Copy .env.example to ignored .env.local and set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Use only the public publishable key, never a secret/service-role key or password. Restart Vite after changes. Configure the same two public build variables in Netlify.
+4. Enter a display name and join the shared pilot. The browser retains its anonymous session. Enrollment grants staff access only to the enabled synthetic workspace. Display names and anonymous sessions do not verify employee identity.
+5. Managers remain administrator-provisioned; ordinary participants can create active master dogs with an optional photo, book dogs, move them, mark attendance and edit markers/runs. Existing profile edits, archiving, photo replacement/deletion, group renaming and clearing bookings remain manager-only.
+6. New dates are empty. Use Dog database → Book for day. There is no external booking integration.
+
+### Realtime, security and photos
+
+Every group, move, booking and attendance mutation updates its day's revision in the same transaction. Clients subscribe to that date's `planning_days` row and the master `dogs` table, then retrieve a consistent snapshot. The same assignment state supplies cards, totals, day records and conflict calculations. Reconnect, focus and a 30-second health refresh reconcile missed events. See [Postgres Changes](https://supabase.com/docs/guides/realtime/postgres-changes).
+
+The migration enables the needed publication entries. Check them with:
+
+```sql
+select schemaname, tablename from pg_publication_tables
+where pubname = 'supabase_realtime';
+```
+
+`unique(planning_day_id,dog_id)` prohibits duplicate placement, including rebooking a departed dog. Composite foreign keys validate group membership. Checked SECURITY DEFINER functions use an empty search path and restricted execution grants. Staff cannot write tables directly or change roles. The checked enrollment RPC grants only fixed-workspace synthetic staff membership. Existing RLS and manager restrictions are retained. See [RLS](https://supabase.com/docs/guides/database/postgres/row-level-security).
+
+Mutations briefly lock the day row and use the individual record version. A move changes location/order only; attendance changes status/timestamps only. A simultaneous move and arrival with the same version produces one success and one explicit conflict, then the client refreshes. Clear checks the day revision captured at confirmation and only removes Expected bookings.
+
+The private `dog-photos` bucket accepts JPEG, PNG and WebP up to 5 MB. Staff can upload a photo while creating a new dog, before its master record is saved. Uploads under existing dogs and photo deletion remain manager-only; staff receive one-hour signed URLs. Keep the bucket private. Old replacement objects are retained to avoid deleting a photo after an ambiguous save; administrators can remove unreferenced objects after a retention period. Signed URLs may remain valid until expiry after sign-out. See [private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals).
+
+## Connectivity and persistence
+
+Editing pauses while saving, connecting or offline. Changes appear after server confirmation. The last in-memory board remains visible offline; a cold offline reload has only the cached application shell, not private records. There is no offline write queue and no browser-local allocation store. Supabase Auth may use browser storage for its session tokens.
+
+If a request loses its connection, the server may still have committed it. Review the refreshed state rather than assuming nothing was saved. Concurrent actions on the same dog surface a conflict instead of silently overwriting a newer version.
+
+Departures retain the daily row and last group. The current status, first arrival and most recent departure are recorded; migration 003 additionally records append-only movement and attendance events from its application onward. Group labels are historical snapshots; dog names/photos reflect the master record. No destructive dog-delete API is exposed.
+
+## Architecture
+
+```text
+src/Planner.tsx           Board, Unassigned, database and day records
+src/components/          Card, group lane, modal and dog editor
+src/model.ts             Attendance types, date, counts and active-lane selectors
+src/behaviour.ts         Pure composition-derived conflicts; fictional demo rules
+src/repository.ts        Shared cloud/demo service contract
+src/supabase.ts          Existing authenticated RPCs, Realtime and Storage
+src/usePlanner.ts        Reconciliation, stale-response protection, write gating
+src/demo.ts              Memory-only fictional bookings/attendance scenarios
+supabase/migrations/     Original schema + additive attendance upgrade
+tests/                  Model, actual PostgreSQL/RLS, browser and opt-in cloud tests
+```
+
+The layout renders group arrays rather than hardcoding three columns. Migration 002 allows display orders 1–4; it does not add a fourth group to real data. Manager UI configuration of group count remains future work. The three-group fixture verifies the desktop density target.
+
+## Test and deploy
 
 ```sh
-# Only if no system Chromium is available:
-npx playwright install chromium
-npm run test:pwa
+pnpm test
+pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
+pnpm test:pwa
+pnpm preview
 ```
 
-This uses system Chromium when available (or `CHROMIUM_PATH`), otherwise Playwright's Chromium. It builds two versions into a temporary directory and tests manifest/icon dimensions, mobile/desktop launch, offline deep-link/reload, update consent, preservation of another tab's board, and old-cache cleanup. It does not publish or change `dist/`. The icons are original geometric paw artwork from `public/icons/icon.svg`, with PNG exports for install and Apple compatibility.
+[TESTING.md](docs/TESTING.md) documents executed checks and the opt-in live Supabase test. Hosted Auth/Storage, actual cross-device Realtime and physical Android acceptance are not implied by passing demo browser tests.
+
+For the approved deployment, use a HTTPS static host with Node 22+, build `pnpm install --frozen-lockfile && pnpm build`, and output directory `dist`. Set the two public Vite variables before the build. Serve from the domain root; use revalidation for `index.html`/`sw.js` and immutable caching for hashed assets. Set the Supabase Auth site URL to the deployed origin. Rebuild after changing Vite settings. No frontend server secrets are needed.
+
+The manifest, icons and service worker support Android installation from HTTPS. Actual installation still needs device verification. The owner subsequently approved deployment; STATUS.md distinguishes approval from completed publication.
+
+## Future imports
+
+Use the repository/service boundary for staged CSV validation, manager review and a stable `(source,external_id)` → dog UUID mapping. Never match records solely by name. Importing the master database must not imply a booking or physical arrival. Future booking imports must use the existing per-day uniqueness constraint and initialise Expected without resetting existing attendance. Do not implement Petboost until its integration is separately specified.
+
+See [FUTURE_FEATURES.md](FUTURE_FEATURES.md) for deferred work.

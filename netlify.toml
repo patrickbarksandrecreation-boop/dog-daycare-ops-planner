@@ -1,9 +1,10 @@
 [build]
-  command = "npm run build"
+  command = "pnpm build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "24"
+  PNPM_FLAGS = "--frozen-lockfile"
 
 # Existing files take precedence. Browser deep links return the SPA shell.
 [[redirects]]

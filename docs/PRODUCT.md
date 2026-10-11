@@ -1,5 +1,7 @@
 # Product brief (v0.1)
 
+> Historical product brief. The approved 10 October 2026 operational workflow and GUI requirements in [WORKFLOW.md](WORKFLOW.md) supersede the layout, placement and attendance descriptions below. Planning and attendance now share one board, including Expected dogs. Current setup and authentication are documented in the root README.
+
 ## Mission
 An operational companion to booking systems such as Gingr. It helps daycare handlers coordinate where dogs are, who supervises them, and what behavioural information affects later decisions. It does **not** replace bookings, billing, or customer communication.
 

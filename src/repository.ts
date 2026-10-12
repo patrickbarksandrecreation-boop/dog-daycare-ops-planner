@@ -1,4 +1,5 @@
 import type { Attendance, Connection, Dog, Profile, Snapshot, Run } from './model';
+import type { InteractionRule } from './behaviour';
 export interface Repository {
   demo: boolean;
   profile(): Promise<Profile>;
@@ -11,6 +12,9 @@ export interface Repository {
   rename(day: string, group: string, name: string, useDefault: boolean): Promise<void>;
   clear(day: string, revision: number): Promise<void>;
   markers(dog: string, groomed: boolean, noWaterpark: boolean, version: number): Promise<void>;
+  saveNotes(dog: string, notes: string, version: number): Promise<void>;
+  saveRule(rule: Pick<InteractionRule, 'dogs' | 'level' | 'note'> & { id?: string; version?: number }): Promise<void>;
+  removeRule(id: string, version: number): Promise<void>;
   assignRun(day: string, group: string, run: Run | null, version: number): Promise<void>;
   saveDog(dog: Partial<Dog> & { name: string }, photo?: File): Promise<void>;
   replacePhoto(dog: Dog, photo: File): Promise<void>;

@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { cloudRepository } from '../src/supabase';
 function fixture() {
   let user='staff-a';
-  const state={day:{id:'day',local_date:'2026-01-01',workspace_id:'workspace'},groups:[{group_id:'group',run_version:1}],assignments:[],dogs:[{id:'dog',name:'Synthetic dog',photo_path:'workspace/dog/a.jpg',is_archived:false}]};
+  const state={day:{id:'day',local_date:'2026-01-01',workspace_id:'workspace'},groups:[{group_id:'group',run_version:1}],assignments:[],rules:[],dogs:[{id:'dog',name:'Synthetic dog',photo_path:'workspace/dog/a.jpg',is_archived:false}]};
   const rpc=vi.fn(async(name:string)=>({data:name==='planning_snapshot'?structuredClone(state):null,error:null as null|{message:string}}));
   const signing=vi.fn(async(paths:string[])=>({data:paths.map(path=>({path,signedUrl:'signed:'+path,error:null})),error:null}));
   const session=vi.fn(async()=>({data:{session:{user:{id:user}}},error:null}));
@@ -51,4 +51,17 @@ it('retries missing photo links instead of permanently caching a signing failure
 it('reports subscription readiness once without issuing a second duplicate change callback',()=>{
   const f=fixture(),changed=vi.fn(),status=vi.fn();const stop=f.repo.watch('2026-01-01',changed,status);
   f.callback('SUBSCRIBED');expect(status).toHaveBeenCalledWith('online');expect(changed).not.toHaveBeenCalled();stop();
+});
+it('sends independent expected versions for notes and symmetric rule edits/removals',async()=>{
+  const f=fixture();
+  await f.repo.saveNotes('dog','Quiet greeting',4);
+  expect(f.rpc).toHaveBeenLastCalledWith('set_handling_notes',{p_dog:'dog',p_notes:'Quiet greeting',p_version:4});
+  await f.repo.saveRule({dogs:['dog','other'],level:'hard',note:'Separate'});
+  expect(f.rpc).toHaveBeenLastCalledWith('save_interaction_rule',{p_id:null,p_dog_a:'dog',p_dog_b:'other',p_level:'hard',p_note:'Separate',p_version:null});
+  await f.repo.saveRule({id:'pair',version:2,dogs:['other','dog'],level:'soft',note:'Monitor'});
+  expect(f.rpc).toHaveBeenLastCalledWith('save_interaction_rule',{p_id:'pair',p_dog_a:'other',p_dog_b:'dog',p_level:'soft',p_note:'Monitor',p_version:2});
+  await f.repo.removeRule('pair',3);
+  expect(f.rpc).toHaveBeenLastCalledWith('remove_interaction_rule',{p_id:'pair',p_version:3});
+  f.rpc.mockResolvedValueOnce({data:null,error:{message:'Rule changed; review the latest version'}});
+  await expect(f.repo.removeRule('pair',2)).rejects.toThrow(/changed/);
 });

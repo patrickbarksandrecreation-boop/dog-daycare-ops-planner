@@ -36,7 +36,9 @@ Group headings show **Present / Planned**. Planned means active Expected + Prese
 
 Evaluate active rules against all Expected and Present dogs assigned to each group. A pair is a **planned conflict** if either dog is still Expected; it is a **present conflict** only when both are Present together. Departure, regrouping and arrival recalculate warnings immediately from confirmed state.
 
-This iteration has deterministic, explicitly fictional pair rules and handling notes in demo mode only. No real behaviour is inferred from names, photos or group placement. Cloud boards say that rules are not configured; no warning is not a claim of safety. Rule editing and an incident-management backend are not included.
+Enrolled staff can edit multiline handling notes and add, edit or remove symmetric pair rules from either dog's information screen. Add rule searches the dog database with name, photo and breed; excludes the current dog; and prevents a second rule for the same pair. Removal requires confirmation. **Hard — Must not mix.** produces a red warning; **Soft — Monitor closely and assess.** produces amber. These levels are independent of Planned/Present attendance. Full warning details identify both dogs and the explanatory note. Warnings never block moves or attendance changes.
+
+Shared storage requires the additive handling-notes migration (not yet applied to the hosted project). Staff authorization, workspace-scoped dog references, unique unordered pairs, version checks and append-only edit/removal history are enforced in PostgreSQL. Remote changes refresh the board; stale drafts are retained for review and cannot overwrite newer changes. Offline viewing retains the last loaded board and disables edits. Demo mode offers the same edits with fictional browser-persisted notes/rules and same-browser tab synchronization. No real behaviour is inferred from names, breeds, photos or placement; no warning is not a claim of safety. See [HANDLING-NOTES-RULES.md](HANDLING-NOTES-RULES.md) for storage, release order and limitations. This is not an incident-management backend.
 
 ## Approved visual requirements
 
@@ -46,7 +48,7 @@ This iteration has deterministic, explicitly fictional pair rules and handling n
 - Each group's heading offers a daily **Run** selector: **Water park, Playground, Farm, Small indoor, A-Frame**, or unassigned. A run is the physical location for that group. New dates start with no run selected. Multiple groups may select the same run; no exclusive occupancy or capacity rule was requested.
 - In Water park, a dog with either marker contributes one warning, listing both reasons if applicable. Expected dogs produce planned (amber) warnings; Present dogs produce present (red) warnings. Departed dogs do not contribute. Warnings are advisory and never silently reject a move.
 - Changing a marker, group, attendance state or run recalculates warnings from confirmed data. Group warning buttons open full details naming affected dogs; individual dog information also shows the Water park warning. Other runs have no configured restrictions yet.
-- Cloud marker and run updates use workspace-scoped, staff-authorised RPCs and separate version checks. Marker changes are delivered through existing dog Realtime events; run changes bump the day's revision. Migration 004 is required after 001–003. No behavioural-note backend is added.
+- Cloud marker and run updates use workspace-scoped, staff-authorised RPCs and separate version checks. Marker changes are delivered through existing dog Realtime events; run changes bump the day's revision. Migration 004 is required after 001–003. Handling notes/rules use a later additive migration and independent version checks.
 
 ### Layout
 

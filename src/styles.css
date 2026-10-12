@@ -3,12 +3,25 @@
 :root { font-family:'DM Sans',sans-serif; color:#243c34; background:#f3f5f2; font-synthesis:none; --green:#244d42; --line:#d9e1d8; --muted:#637369; }
 * { box-sizing:border-box; }
 body { margin:0; font-size:14px; }
-button,input,select { font:inherit; }
+button,input,select,textarea { font:inherit; }
 button { display:inline-flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; min-height:36px; padding:7px 12px; border:1px solid var(--line); border-radius:6px; color:inherit; background:#fff; font-weight:600; }
 button:hover:not(:disabled) { background:#eaf1e8; border-color:#a5b8a6; }
 button:disabled { cursor:default; opacity:.5; }
-button:focus-visible,input:focus-visible,select:focus-visible { outline:3px solid #457aad; outline-offset:2px; }
-input,select { min-width:0; width:100%; border:1px solid #c9d5cc; border-radius:6px; padding:9px 10px; background:#fff; color:inherit; }
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid #457aad; outline-offset:2px; }
+input,select,textarea { min-width:0; width:100%; border:1px solid #c9d5cc; border-radius:6px; padding:9px 10px; background:#fff; color:inherit; }
+textarea { resize:vertical; }
+.preserve-lines { white-space:pre-wrap; overflow-wrap:anywhere; }
+.behaviour-editor,.behaviour-editor form,.rule-form { display:grid; gap:10px; min-width:0; }
+.behaviour-editor h3 { margin-top:10px; }
+.behaviour-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.behaviour-actions button,.rule-dog-list button { min-height:44px; }
+.rule-form { padding:12px; border:1px solid var(--line); border-radius:6px; }
+.rule-dog-list { display:grid; gap:6px; max-height:230px; overflow:auto; }
+.rule-dog-list button { justify-content:flex-start; text-align:left; min-width:0; }
+.rule-dog-list span { min-width:0; overflow-wrap:anywhere; }
+.rule-dog-list small { display:block; }
+.rule-note.rule-hard { color:#8b1d1d; background:#ffe5df; border-left:4px solid #b32727; }
+.rule-note.rule-soft { color:#704b00; background:#fff3d5; border-left:4px solid #b77900; }
 h1,h2,h3,p { margin:0; }
 h1,h2,h3,.brand { font-family:Manrope,sans-serif; }
 h2 { font-size:18px; }
@@ -213,7 +226,7 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .planner-footer { flex-wrap:wrap; padding:8px 0; line-height:1.6; }
   .planner-footer .text-button { min-height:44px; }
   dialog { padding:16px; }
-  dialog input,dialog select { font-size:16px; }
+  dialog input,dialog select,dialog textarea { font-size:16px; }
   dialog button { min-height:44px; }
   .database-row { gap:7px; }
   .database-row .icon-button { width:29px; }

@@ -1,3 +1,4 @@
+import type { InteractionRule } from './behaviour';
 export type Dog = {
   id: string;
   name: string;
@@ -8,6 +9,10 @@ export type Dog = {
   groomed?: boolean;
   no_waterpark?: boolean;
   marker_version?: number;
+  handling_notes?: string;
+  notes_version?: number;
+  notes_updated_at?: string | null;
+  notes_updated_by?: string | null;
 };
 export const runs = ['Water park', 'Playground', 'Farm', 'Small indoor', 'A-Frame'] as const;
 export type Run = typeof runs[number];
@@ -28,6 +33,7 @@ export type Snapshot = {
   groups: Group[];
   assignments: Assignment[];
   dogs: Dog[];
+  rules: InteractionRule[];
 };
 export type Profile = { id: string; display_name: string; role: 'manager' | 'staff' };
 export type Connection = 'connecting' | 'online' | 'offline';

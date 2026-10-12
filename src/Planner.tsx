@@ -13,13 +13,14 @@ import { Sparkles, DropletOff } from 'lucide-react';
 import { runWarnings } from './runs';
 import type { Assignment, Attendance, Dog, Group, Snapshot } from './model';
 import type { Repository } from './repository';
-import { demoNotes, demoRules, groupConflicts } from './behaviour';
+import { groupConflicts, ruleLabel } from './behaviour';
 import { usePlanner } from './usePlanner';
 import { Modal, SaveError } from './components/Modal';
 import { Avatar } from './components/Avatar';
 import { DogCard } from './components/DogCard';
 import { DogEditor } from './components/DogEditor';
 import { PhotoEditor } from './components/PhotoEditor';
+import { BehaviourEditor } from './components/BehaviourEditor';
 import { matchesDog, shortDogNames } from './dogLabels';
 import { GroupLane } from './components/GroupLane';
 import { PanelResize, usePanelSizes } from './components/PanelResize';
@@ -96,7 +97,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const [clearing, setClearing] = useState<Snapshot['day'] | null>(null);
   const totals = counts(state?.assignments || []);
   const manager = profile?.role === 'manager';
-  const rules = repo.demo ? demoRules : [];
+  const rules = state?.rules || [];
   const dogsById = new Map(state?.dogs.map(d => [d.id, d]));
   const photoTarget = photoDog ? dogsById.get(photoDog.id) : undefined;
   const shortNames = shortDogNames(state?.dogs || []);
@@ -178,7 +179,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <button className="icon-button" aria-label="Next day" disabled={busy} onClick={() => offsetDate(1)}><ArrowRight size={15}/></button>
         <button className="today" disabled={busy} onClick={() => changeDate(todayBrisbane())}>Today</button>
       </div>
-      <span className={`connection ${connection}`} role="status"><i/>{busy ? 'Saving…' : connection === 'online' ? repo.demo ? 'Demo · session only' : 'Live · saved' : connection === 'offline' ? 'Offline · view only' : 'Connecting…'}</span>
+      <span className={`connection ${connection}`} role="status"><i/>{busy ? 'Saving…' : connection === 'online' ? repo.demo ? 'Demo · fictional data' : 'Live · saved' : connection === 'offline' ? 'Offline · view only' : 'Connecting…'}</span>
       <button className="icon-button" aria-label={repo.demo ? 'Exit demo' : 'Sign out'} onClick={async () => {
         try { await repo.signOut(); onExit(); } catch (e) { setError(e instanceof Error ? e.message : 'Sign out failed.'); }
       }}><LogOut size={17}/></button>
@@ -248,7 +249,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         </div>
         <DragOverlay style={{ pointerEvents: 'none' }}>{drag && <div className="drag-preview"><Avatar dog={dogsById.get(drag.dog_id)!}/><strong>{dogsById.get(drag.dog_id)!.name}</strong><span>{drag.attendance_status}</span></div>}</DragOverlay>
       </DndContext>}
-    <footer className="planner-footer"><span>{repo.demo ? 'Demo resets on refresh.' : 'Synthetic shared pilot.'} Assignment does not mark arrival.</span>
+    <footer className="planner-footer"><span>{repo.demo ? 'Demo board resets on refresh; notes and rules stay in this browser.' : 'Synthetic shared pilot.'} Assignment does not mark arrival.</span>
       {manager && <button className="text-button danger" disabled={!editable || totals.expected === 0} onClick={() => setClearing(state!.day)}>Clear expected bookings</button>}
     </footer>
     {database && state && <Modal title="Dog database" wide close={() => setDatabase(false)}>
@@ -284,10 +285,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       </div>
       <p className="muted">Markers stay on this dog until cleared. No water park records the owner’s request.</p>
       {state.groups.flatMap(g => runWarnings(state.assignments.filter(a => a.dog_id === infoDog.id), state.dogs, g)).map(w => <p role="alert" className="rule-note" key={w.id}>{w.note}</p>)}
-      <h3>Handling notes</h3><p>{repo.demo ? demoNotes[infoDog.id] || 'No fictional handling notes for this dog.' : 'No handling notes configured.'}</p>
-      <h3>Interaction rules</h3>
-      {rules.filter(r => r.active && r.dogs.includes(infoDog.id)).map(r => <p className="rule-note" key={r.id}>{r.note}</p>)}
-      {!rules.some(r => r.active && r.dogs.includes(infoDog.id)) && <p>No configured interaction rules. This is not a compatibility assessment.</p>}
+      <BehaviourEditor key={infoDog.id} dog={infoDog} dogs={state.dogs} rules={rules} editable={editable} repo={repo} run={run}/>
       {infoAssignment?.arrived_at && <p className="timestamp">Arrived: {new Date(infoAssignment.arrived_at).toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })}</p>}
       {infoAssignment?.departed_at && <p className="timestamp">Departed: {new Date(infoAssignment.departed_at).toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })}</p>}
       {infoAssignment && isActive(infoAssignment) && <label>Move to<select aria-label="Move dog to" value={infoAssignment.group_id || ''} disabled={!editable}
@@ -302,8 +300,12 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       </footer>
     </Modal>}
     {alertGroup && state && <Modal title={`Warnings · ${state.groups.find(g => g.group_id === alertGroup)?.displayed_name}`} close={() => setAlertGroup(null)}>
-      {[...groupConflicts(state.assignments, alertGroup, rules), ...state.groups.filter(g => g.group_id === alertGroup).flatMap(g => runWarnings(state.assignments, state.dogs, g))].map(w => <p className="rule-note" key={w.id}><strong>{w.severity === 'present' ? 'Present' : 'Planned'}:</strong> {w.note}</p>)}
-      <p className="muted">Warnings are advisory. Review the marked dogs before using this run.</p>
+      {groupConflicts(state.assignments, alertGroup, rules).map(w => <div className={`rule-note rule-${w.level}`} key={w.id}>
+        <strong>{ruleLabel(w.level)} · {w.severity === 'present' ? 'Present' : 'Planned'}</strong>
+        <p>{w.dogs.map(id => dogsById.get(id)?.name || 'Unavailable dog').join(' + ')}</p><p className="preserve-lines">{w.note}</p>
+      </div>)}
+      {state.groups.filter(g => g.group_id === alertGroup).flatMap(g => runWarnings(state.assignments, state.dogs, g)).map(w => <p className="rule-note" key={w.id}><strong>{w.severity === 'present' ? 'Present' : 'Planned'}:</strong> {w.note}</p>)}
+      <p className="muted">Planned: at least one dog is Expected. Present: both dogs are Present. Departed dogs do not create active warnings. Warnings are advisory; moves and attendance changes remain available.</p>
     </Modal>}
     {history && state && <Modal title="Day records" wide close={() => setHistory(false)}>
       <p className="muted">{totals.total} booked · {totals.present} Present · {totals.expected} Expected · {totals.departed} Departed. Departed dogs keep their last group.</p>

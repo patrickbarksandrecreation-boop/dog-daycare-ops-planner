@@ -1,5 +1,15 @@
 # Implementation status
 
+## Handling notes and interaction rules (implemented locally; 12 October 2026)
+
+`codex/handling-notes-interaction-rules` adds staff-editable multiline notes, searchable dog selection with photo/breed, symmetric Hard/Soft pair rules, editing and confirmed removal. Hard/red and Soft/amber are independent of Planned/Present attendance. Warnings name both dogs and the note and remain advisory. Existing panels, group names, attendance, movement, markers/runs and photos are preserved.
+
+New additive migration `20261012044344_handling_notes_interaction_rules.sql` provides workspace isolation, composite dog references, distinct canonical pairs, uniqueness, staff-only version-checked RPCs and append-only attributed before/after audit history. Rule changes refresh both dogs through existing Realtime subscriptions. Demo notes/rules persist in browser storage with same-browser tab synchronization and stale-write protection. Offline mode retains last-loaded viewing and disables editing. See [HANDLING-NOTES-RULES.md](HANDLING-NOTES-RULES.md).
+
+Verification: **74 unit/database tests and all 26 Chromium browser tests passed**, including five focused new browser tests. Frontend/Edge type checks, production build and PWA validation passed. Desktop regression measured **72 complete cards at 1920×1080**, normal zoom, no horizontal overflow. Mobile keyboard editing passed at 390px; screenshots are `handling-rules-mobile.png` and `handling-rules-desktop.png`. The production build retains the non-blocking bundle-size warning (558 kB before gzip).
+
+**Not applied, merged or deployed.** Hosted two-staff delivery, real multi-connection contention and physical-device acceptance are unverified. PGlite runs actual PostgreSQL constraints/RLS but serializes submitted competing writes; two-tab synchronization coverage is fictional demo mode. No audit browser UI is included. Cloud offline viewing remains memory-only; a cold offline reload cannot recover private records. Next step: review this commit, then explicitly authorize the additive hosted migration and two-staff acceptance before any deployment.
+
 ## Editable group names (released; verified 12 October 2026)
 
 `codex/editable-group-names` enables the existing pencil/name form for all enrolled staff on an editable board. Opening it clears the dog selection. Names are trimmed and limited to 1–40 characters; Cancel discards edits, and the optional future-day default remains available. Additive migration `20261011103159_staff_group_names.sql` permits staff rename RPCs while retaining day locking, workspace/membership checks, scoped updates and anonymous execution denial. Earlier staff-rename denial notes below describe the deployed release.
@@ -43,8 +53,8 @@ The connected migration service assigns cloud versions different from local file
 - Browser anonymous identity and a typed name are not verified employee identity. Enrollment is openly joinable for synthetic data. CAPTCHA/abuse controls, controlled admission and a privacy review are required before considering real records.
 - Staff creation, initial private photo upload, denied existing-profile edits/archive/uploads/rename/clear, cross-workspace and revoked-membership denial have local PostgreSQL coverage. Dedicated hosted cross-workspace, manager and revocation tests remain outstanding. Test physical Android/PWA use and multiple real devices.
 - Post-migration advisors report the deliberately inaccessible enrollment ledger, authenticated SECURITY DEFINER RPCs, the approved anonymous-session policies and disabled leaked-password protection (the trial uses anonymous identities). Their explicit grants, membership checks, empty search paths and scoped operations are reviewed and locally tested; see ANONYMOUS-PILOT.md.
-- No behavioural-note backend or Petboost integration. Cloud interaction rules are unconfigured; demo rules remain fictional. Marker/run changes are not movement-audit events. Audit history starts when migration 003 was applied; database owners retain administrative powers.
-- Source checkout: `main`, including approved PR #5 merge `e84b601`.
+- The deployed release still has no handling-note backend or configured cloud interaction rules; this branch adds them pending approval. No Petboost integration exists. Marker/run changes are not movement-audit events. Movement history starts when migration 003 was applied; behaviour history will start when the new migration is applied. Database owners retain administrative powers.
+- Current feature branch: `codex/handling-notes-interaction-rules`, based on `e563987` after the approved group-name release.
 
 ## Dog cards, breed information and staff photo replacement (approved release)
 

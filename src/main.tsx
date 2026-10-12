@@ -65,7 +65,7 @@ function App() {
     {error && <p className="error" role="alert">{error}</p>}
     <label className="demo-scenario">Demo scenario<select aria-label="Demo scenario" value={scenario} onChange={e => setScenario(e.target.value as DemoScenario)}><option value="morning">Morning · 100 Expected, unassigned</option><option value="planned">Planned day · 3 groups + arrivals</option><option value="four">Future layout · 4 groups</option></select></label>
     <button className="demo-button" onClick={() => setRepo(demoRepository(scenario))}>Explore the demo <ArrowRight size={17}/></button>
-    <small>Demo changes last for this session only. No real dog records.</small>
+    <small>Fictional demo only. Notes and rules stay in this browser; the board resets on refresh.</small>
   </section><aside className="welcome-art" aria-hidden="true"><div className="art-paw"><PawPrint size={160}/></div><p>Different dogs.<br/>Happy groups.</p><span>MADE FOR THE PEOPLE WHO KNOW THEM BEST.</span></aside></main>;
 }
 createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);

@@ -3,6 +3,8 @@ export interface Repository {
   demo: boolean;
   profile(): Promise<Profile>;
   snapshot(date: string): Promise<Snapshot>;
+  // Optional presentation enrichment; never blocks authoritative board reads/writes.
+  photos?(state: Snapshot): Promise<Snapshot>;
   watch(date: string, changed: () => void, status: (value: Connection) => void): () => void;
   add(day: string, dog: string): Promise<void>;
   move(day: string, assignment: string, group: string | null, before: string | null, version: number): Promise<void>;

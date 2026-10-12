@@ -1,5 +1,17 @@
 # Implementation status
 
+## Loading and persistence responsiveness (local; 12 October 2026)
+
+Requests now show explicit loading/refreshing; Retry appears only after failure, and empty days are identified separately. Private-photo signing enriches the latest board in the background with shared in-flight requests and session invalidation. Focus/health refreshes coalesce; version checks, post-save reconciliation and Realtime catch-up remain intact. Controlled paired timings: first board **1,301 → 559 ms**, save with a new photo path **1,263 → 512 ms**, with injected 800 ms signing latency. These are local measurements, not production claims.
+
+Verification: **76 unit/PostgreSQL tests, 34 Chromium tests**, frontend/Edge type checks, production build and offline PWA check passed. Hosted RPC statistics and migration ledger were inspected read-only; the original development branch required an unapplied handling-notes migration. This release cherry-picks only loading and compact tiles onto main; it excludes that feature and requires no new migration. Hosted two-staff acceptance and real-device timings remain unverified. Existing bundle warning remains. No merge/deployment/backend changes. See [investigation, measurements and next step](LOADING-PERFORMANCE.md).
+
+## Compact group tiles (local; 12 October 2026)
+
+Group-only CSS uses 68px desktop / 78px mobile minimum columns, 66px / 70px tile heights and 4px grid gaps. Names remain 13px and abbreviated breeds 11px; photos, grip dragging, tap moves and hold details remain available. Unassigned and database styles/data are unchanged. Resize coverage now adds 30 bookings to exercise panel growth with smaller tiles.
+
+Validation: build and 74 unit/database tests passed; final focused Chromium desktop density, pointer drag/reorder, panel growth and 390px touch tests passed (4/4). Desktop shows 90 complete grouped tiles at normal zoom without horizontal overflow; mobile fits four columns. Broader browser runs encountered trace-output collisions and development reloads during concurrent workspace edits; the final focused run used separate output. Existing bundle-size warning remains. Physical devices are unverified. No merge or deployment; next step is review the local CSS and screenshots.
+
 ## Editable group names (released; verified 12 October 2026)
 
 `codex/editable-group-names` enables the existing pencil/name form for all enrolled staff on an editable board. Opening it clears the dog selection. Names are trimmed and limited to 1–40 characters; Cancel discards edits, and the optional future-day default remains available. Additive migration `20261011103159_staff_group_names.sql` permits staff rename RPCs while retaining day locking, workspace/membership checks, scoped updates and anonymous execution denial. Earlier staff-rename denial notes below describe the deployed release.

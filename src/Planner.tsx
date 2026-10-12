@@ -279,7 +279,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <p>{infoAssignment?.group_id ? state.groups.find(g => g.group_id === infoAssignment.group_id)?.displayed_name : 'Unassigned'}{infoDog.is_archived ? ' · Archived record' : ''}</p></div></div>
       {repo.demo && <p className="fixture-label">Fictional information · demonstration only</p>}
       <p className="dog-breed-detail">Breed: {infoDog.breed || 'Not recorded'}</p>
-      <ColourEditor key={infoDog.id} dog={infoDog} editable={editable}
+      <ColourEditor key={`colour-${infoDog.id}`} dog={infoDog} editable={editable}
         save={(colour, version) => run(() => repo.saveColour(infoDog.id, colour, version))}/>
       <button disabled={!editable} onClick={() => { setInfoId(null); setPhotoDog(infoDog); }}>Change photo</button>
       <div className="marker-actions" aria-label="Dog markers">
@@ -288,7 +288,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       </div>
       <p className="muted">Markers stay on this dog until cleared. No water park records the owner’s request.</p>
       {state.groups.flatMap(g => runWarnings(state.assignments.filter(a => a.dog_id === infoDog.id), state.dogs, g)).map(w => <p role="alert" className="rule-note" key={w.id}>{w.note}</p>)}
-      <BehaviourEditor key={infoDog.id} dog={infoDog} dogs={state.dogs} rules={rules} editable={editable} repo={repo} run={run}/>
+      <BehaviourEditor key={`behaviour-${infoDog.id}`} dog={infoDog} dogs={state.dogs} rules={rules} editable={editable} repo={repo} run={run}/>
       {infoAssignment?.arrived_at && <p className="timestamp">Arrived: {new Date(infoAssignment.arrived_at).toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })}</p>}
       {infoAssignment?.departed_at && <p className="timestamp">Departed: {new Date(infoAssignment.departed_at).toLocaleString('en-AU', { timeZone: 'Australia/Brisbane' })}</p>}
       {infoAssignment && isActive(infoAssignment) && <label>Move to<select aria-label="Move dog to" value={infoAssignment.group_id || ''} disabled={!editable}

@@ -47,3 +47,18 @@ test('colour controls fit a phone and keep the selected card colour visible',asy
   await page.getByRole('button',{name:'Select Alfie',exact:true}).click();
   await expect(page.getByTestId('card-Alfie')).toHaveCSS('background-color','rgb(227, 215, 245)');
 });
+test('shared board refreshes keep colour and behaviour sections unique',async({page})=>{
+  await page.goto('/tests/fixtures/loading.html?photoDelay=20');
+  await page.getByRole('button',{name:'Information for Alfie',exact:true}).click();
+  for(let i=0;i<3;i++) {
+    await page.evaluate(async()=>{
+      const control=(window as any).control;
+      const reads=control.reads;
+      control.changed();
+      while(control.reads===reads) await new Promise(resolve=>setTimeout(resolve,20));
+    });
+    await expect(page.locator('.connection')).toHaveText('Live · saved');
+    await expect(page.getByRole('button',{name:'Blue card colour',exact:true})).toHaveCount(1);
+    await expect(page.getByRole('button',{name:'Edit notes',exact:true})).toHaveCount(1);
+  }
+});

@@ -1,5 +1,13 @@
 # Implementation status
 
+## Shared dog preferences release (approved; 13 October 2026)
+
+The owner explicitly approved both hosted migrations and merging/publication. Handling notes/rules is applied as cloud version `20261012193929`; dog card colours is applied as `20261012193942`. Hosted API acceptance passed colour persistence, simultaneous-write conflicts, validation, direct-write/nonstaff/unauthenticated denial, unchanged profile metadata, handling notes, symmetric rule add/edit/remove and attributed history on dedicated synthetic date 2038-10-13. The test resets colours to White, clears test notes and removes test rules; fictional master dogs/bookings and audit history are retained.
+
+PR #9 integrates the existing compact/loading release. Its initial full GitHub checks passed. Preview acceptance caught duplicate colour controls during authoritative refreshes: colour and behaviour sibling editors used the same React key. Distinct section keys fix reconciliation; all three focused colour browser tests now pass, including repeated shared-board refreshes. Final-head CI and hosted preview/production UI verification are pending at this checkpoint. No production merge yet. Security advisors retain the intentional membership-checked RPC, approved synthetic anonymous access, private-ledger and password-protection notices; new tables use workspace-filtered RLS and explicit read-only grants.
+
+Repeatable opt-in hosted API/two-browser test: `tests/live-dog-preferences.mjs`. Remaining physical-device acceptance is unverified.
+
 ## Dog card colours (local; 12 October 2026)
 
 Dog information now offers seven named colour presets (including White), a custom colour picker, preview, Save colour and Cancel colour change. Enrolled staff can set colours independently of manager profile editing. Group and Unassigned cards retain the chosen background while selected; black/white text follows colour luminance. Colours belong to master dogs across dates and groups.

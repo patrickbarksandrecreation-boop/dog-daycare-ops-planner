@@ -1,5 +1,11 @@
 # Implementation status
 
+## Editable group names (branch work, 11 October 2026)
+
+`codex/editable-group-names` enables the existing pencil/name form for all enrolled staff on an editable board. Opening it clears the dog selection. Names are trimmed and limited to 1–40 characters; Cancel discards edits, and the optional future-day default remains available. Additive migration `20261011103159_staff_group_names.sql` permits staff rename RPCs while retaining day locking, workspace/membership checks, scoped updates and anonymous execution denial. Earlier staff-rename denial notes below describe the deployed release.
+
+Local verification: 64 unit/database tests, production build, and two focused Chromium rename tests passed. The owner approved migration and deployment. Migration applied as cloud version `20261011103645`; hosted acceptance passed staff renaming, trimming, second-session visibility, validation, and nonstaff/unauthenticated denial on dedicated synthetic date 2038-10-11. Its original label was restored. `tests/live-group-names.mjs` provides opt-in API and deployed two-browser acceptance. Security advisors retain the documented membership-checked RPC and synthetic-pilot notices. Frontend publication and deployed UI verification are pending.
+
 Verified 11 October 2026. [WORKFLOW.md](WORKFLOW.md) governs the approved board; [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md) governs authentication and enrollment. The owner approved anonymous sessions, cloud changes and deployment.
 
 ## Ready and verified
@@ -27,6 +33,7 @@ The connected migration service assigns cloud versions different from local file
 | 20261011050413_staff_dog_creation.sql | 20261011050754 |
 | 20261011070104_petboost_dog_metadata.sql | 20261011070358 |
 | 20261011082513_dog_breed_staff_photos.sql | 20261011092203 |
+| 20261011103159_staff_group_names.sql | 20261011103645 |
 
 ## Release checklist and remaining limits
 

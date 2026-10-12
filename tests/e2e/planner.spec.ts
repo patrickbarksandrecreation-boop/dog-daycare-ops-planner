@@ -132,6 +132,23 @@ test('inline labels, date restoration and safe clear retain attendance history',
   await expect(page.getByTestId('present-count')).toHaveText('31');
   await expect(page.getByTestId('booked-count')).toHaveText('31');
 });
+test('group rename cancels selection, rejects blank names and can be cancelled', async ({page}) => {
+  await demo(page);
+  await page.getByRole('button',{name:'Select Alfie',exact:true}).click();
+  await page.getByRole('button',{name:'Rename Group 1',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Cancel selection',exact:true})).toHaveCount(0);
+  await page.getByLabel('Group name',{exact:true}).fill('   ');
+  await expect(page.getByRole('button',{name:'Save name',exact:true})).toBeDisabled();
+  await page.getByLabel('Group name',{exact:true}).fill('Cancelled name');
+  await page.locator('.inline-rename').getByRole('button',{name:'Cancel',exact:true}).click();
+  await expect(page.getByTestId('lane-group-1').getByRole('heading')).toHaveText('Group 1');
+  await page.getByRole('button',{name:'Rename Group 1',exact:true}).click();
+  await page.getByLabel('Group name',{exact:true}).fill('  Gentle souls  ');
+  await page.getByRole('button',{name:'Save name',exact:true}).click();
+  await expect(page.getByTestId('lane-group-1').getByRole('heading')).toHaveText('Gentle souls');
+  await page.getByLabel('Planning date').fill('2038-01-02');
+  await expect(page.getByTestId('lane-group-1').getByRole('heading')).toHaveText('Group 1');
+});
 test('right-click and double-click show the same dog information', async ({page}) => {
   await demo(page);
   await page.getByRole('button',{name:'Select Alfie',exact:true}).click({button:'right'});

@@ -15,6 +15,7 @@ export interface Repository {
   clear(day: string, revision: number): Promise<void>;
   markers(dog: string, groomed: boolean, noWaterpark: boolean, version: number): Promise<void>;
   saveNotes(dog: string, notes: string, version: number): Promise<void>;
+  saveColour(dog: string, colour: string, version: number): Promise<void>;
   saveRule(rule: Pick<InteractionRule, 'dogs' | 'level' | 'note'> & { id?: string; version?: number }): Promise<void>;
   removeRule(id: string, version: number): Promise<void>;
   assignRun(day: string, group: string, run: Run | null, version: number): Promise<void>;

@@ -33,6 +33,23 @@ beforeAll(async()=>{
 });
 afterAll(async()=>{await db?.close();});
 describe.sequential('shared notes/rules PostgreSQL permissions, invariants and audit',()=>{
+  it('saves staff card colours across dates with independent versions and protects workspace access',async()=>{
+    const before=(await snapshot()).dogs.find((d:any)=>d.id===a);
+    expect(before).toMatchObject({card_colour:'#ffffff',colour_version:1});
+    await q('select public.set_dog_colour($1,$2,1)',[a,'#CFE5FA']);
+    expect((await snapshot()).dogs.find((d:any)=>d.id===a)).toMatchObject({...before,card_colour:'#cfe5fa',colour_version:2,updated_at:expect.any(String)});
+    await expect(q('select public.set_dog_colour($1,$2,1)',[a,'#000000'])).rejects.toThrow(/colour changed/);
+    for(const colour of ['red','#fff','#gggggg','url(x)',null]) await expect(q('select public.set_dog_colour($1,$2,2)',[a,colour])).rejects.toThrow(/valid card colour/);
+    await expect(q('select public.set_dog_colour($1,$2,1)',[c,'#000000'])).rejects.toThrow(/unavailable/);
+    await expect(q("update public.dogs set card_colour='#000000' where id=$1",[a])).rejects.toThrow(/permission denied/);
+    await as(outsider); await expect(q('select public.set_dog_colour($1,$2,2)',[a,'#000000'])).rejects.toThrow(/staff/i);
+    await as(staff,'anon'); await expect(q('select public.set_dog_colour($1,$2,2)',[a,'#000000'])).rejects.toThrow(/permission denied/);
+    await as(second); await q('select public.set_dog_colour($1,$2,2)',[a,'#000000']);
+    await q("select public.ensure_planning_day('2026-10-14')");
+    expect((await q("select public.planning_snapshot('2026-10-14') s"))[0].s.dogs.find((d:any)=>d.id===a)).toMatchObject({card_colour:'#000000',colour_version:3});
+    await q('select public.set_dog_colour($1,$2,3)',[a,'#ffffff']);
+    await as(staff);
+  });
   it('allows enrolled staff notes and preserves independent dog attributes with audit attribution',async()=>{
     await q('select public.set_handling_notes($1,$2,1)',[a,'  Calm greeting\nGive space  ']);
     const s=await snapshot(); expect(s.dogs.find((d:any)=>d.id===a)).toMatchObject({handling_notes:'Calm greeting\nGive space',notes_version:2,notes_updated_by:'Synthetic Staff'});

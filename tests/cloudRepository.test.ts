@@ -15,6 +15,13 @@ function fixture() {
   return {repo, read: async (date:string) => repo.photos!(await repo.snapshot(date)),state,rpc,signing,single,callback:(s:string)=>callback(s),switchUser:()=>{user='staff-b';}};
 }
 afterEach(()=>{vi.useRealTimers();});
+it('saves only colour through the version-checked staff RPC and propagates failures',async()=>{
+  const f=fixture();
+  await f.repo.saveColour('dog','#cfe5fa',2);
+  expect(f.rpc).toHaveBeenCalledWith('set_dog_colour',{p_dog:'dog',p_colour:'#cfe5fa',p_version:2});
+  f.rpc.mockResolvedValueOnce({data:null,error:{message:'Card colour changed'}});
+  await expect(f.repo.saveColour('dog','#ffffff',2)).rejects.toThrow('Card colour changed');
+});
 it('returns authoritative state before photo signing and shares in-flight signing',async()=>{
   const f=fixture(); let release!:()=>void;
   f.signing.mockImplementationOnce(async paths=>{

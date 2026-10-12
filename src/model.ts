@@ -13,6 +13,8 @@ export type Dog = {
   notes_version?: number;
   notes_updated_at?: string | null;
   notes_updated_by?: string | null;
+  card_colour?: string;
+  colour_version?: number;
 };
 export const runs = ['Water park', 'Playground', 'Farm', 'Small indoor', 'A-Frame'] as const;
 export type Run = typeof runs[number];

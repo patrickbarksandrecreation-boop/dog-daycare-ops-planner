@@ -102,6 +102,7 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
     clear: (day, revision) => rpc('clear_plan', { p_day: day, p_revision: revision }),
     markers: (dog, groomed, noWaterpark, version) => rpc('set_dog_markers', { p_dog: dog, p_groomed: groomed, p_no_waterpark: noWaterpark, p_version: version }),
     saveNotes: (dog, notes, version) => rpc('set_handling_notes', { p_dog: dog, p_notes: notes, p_version: version }),
+    saveColour: (dog, colour, version) => rpc('set_dog_colour', { p_dog: dog, p_colour: colour, p_version: version }),
     saveRule: rule => rpc('save_interaction_rule', { p_id: rule.id || null, p_dog_a: rule.dogs[0], p_dog_b: rule.dogs[1], p_level: rule.level, p_note: rule.note, p_version: rule.version ?? null }),
     removeRule: (id, version) => rpc('remove_interaction_rule', { p_id: id, p_version: version }),
     assignRun: (day, group, run, version) => rpc('set_group_run', { p_day: day, p_group: group, p_run: run, p_version: version }),

@@ -1,5 +1,15 @@
 # Implementation status
 
+## Dog card colours (local; 12 October 2026)
+
+Dog information now offers seven named colour presets (including White), a custom colour picker, preview, Save colour and Cancel colour change. Enrolled staff can set colours independently of manager profile editing. Group and Unassigned cards retain the chosen background while selected; black/white text follows colour luminance. Colours belong to master dogs across dates and groups.
+
+CLI-generated additive migration `20261012105959_dog_card_colours.sql` adds white defaults, validated hex colours, independent versions and a membership/workspace-checked `set_dog_colour` RPC. Existing snapshot and dog Realtime delivery carry the fields. Direct table writes remain denied. Stale drafts cannot overwrite a newer colour. Demo colours persist with fictional notes/rules in browser storage and synchronize across tabs; offline edits are disabled.
+
+Verification: **80 unit/PostgreSQL tests, all 36 Chromium browser tests**, TypeScript/production build and offline PWA check passed. The contrast adjustment received a focused unit rerun. The first broad browser run had a touch-test context destroyed by a development reload during source editing; the final unchanged-source run passed all tests. Phone popup screenshot: `docs/screenshots/dog-colour-mobile.png`. Existing bundle-size warning remains.
+
+**Not applied, merged or deployed.** Read-only hosted migration inspection still shows staff group names as the latest applied migration. Publishing this checkout also requires the earlier handling-notes migration. Hosted colour persistence/Realtime and physical-device acceptance remain unverified. Next step: approve the pending migrations and publication, then verify with independent staff sessions on synthetic records.
+
 ## Loading and persistence responsiveness (local; 12 October 2026)
 
 Requests now show explicit loading/refreshing; Retry appears only after failure, and empty days are identified separately. Private-photo signing enriches the latest board in the background with shared in-flight requests and session invalidation. Focus/health refreshes coalesce; version checks, post-save reconciliation and Realtime catch-up remain intact. Controlled paired timings: first board **1,301 → 559 ms**, save with a new photo path **1,263 → 512 ms**, with injected 800 ms signing latency. These are local measurements, not production claims.

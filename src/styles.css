@@ -90,6 +90,14 @@ small,.muted { color:var(--muted); }
 .dog-card.present { border-left:3px solid #6c9e84; padding-left:0; }
 .dog-card.selected { border:2px solid #427fbd; box-shadow:0 0 0 2px #427fbd26; background:#eff7ff; padding-left:0; }
 .dog-card.dragging { opacity:.25; }
+.dog-card,.dog-card.selected { background:var(--dog-colour,#fff); color:var(--dog-ink,#17251f); }
+.dog-card .breed-label,.dog-card .drag-handle,.dog-card .info-action { color:var(--dog-ink,#17251f); }
+.colour-editor { display:grid; gap:10px; margin:12px 0; }
+.colour-preview { padding:12px; border:1px solid var(--line); border-radius:6px; background:var(--dog-colour); color:var(--dog-ink); font-weight:700; }
+.colour-presets { display:flex; flex-wrap:wrap; gap:6px; }
+.colour-presets button { min-height:44px; color:#17251f; }
+.colour-presets button[aria-pressed=true] { outline:2px solid #427fbd; outline-offset:1px; }
+.colour-editor input[type=color] { display:block; width:100%; height:44px; padding:3px; cursor:pointer; }
 .drag-handle { width:17px; min-height:38px; padding:0; border:0; background:none; color:#8a9a88; flex-shrink:0; touch-action:none; cursor:grab; }
 .card-select { display:flex; flex:1; min-width:0; min-height:38px; justify-content:flex-start; gap:7px; padding:0; background:transparent; border:0; text-align:left; touch-action:pan-y; user-select:none; -webkit-touch-callout:none; }
 .card-select:hover:not(:disabled) { background:transparent; }

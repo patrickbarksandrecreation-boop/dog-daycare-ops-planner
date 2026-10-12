@@ -18,6 +18,7 @@ import { usePlanner } from './usePlanner';
 import { Modal, SaveError } from './components/Modal';
 import { Avatar } from './components/Avatar';
 import { DogCard } from './components/DogCard';
+import { ColourEditor } from './components/ColourEditor';
 import { DogEditor } from './components/DogEditor';
 import { PhotoEditor } from './components/PhotoEditor';
 import { BehaviourEditor } from './components/BehaviourEditor';
@@ -249,7 +250,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         </div>
         <DragOverlay style={{ pointerEvents: 'none' }}>{drag && <div className="drag-preview"><Avatar dog={dogsById.get(drag.dog_id)!}/><strong>{dogsById.get(drag.dog_id)!.name}</strong><span>{drag.attendance_status}</span></div>}</DragOverlay>
       </DndContext>}
-    <footer className="planner-footer"><span>{repo.demo ? 'Demo board resets on refresh; notes and rules stay in this browser.' : 'Synthetic shared pilot.'} Assignment does not mark arrival.</span>
+    <footer className="planner-footer"><span>{repo.demo ? 'Demo board resets on refresh; notes, rules and colours stay in this browser.' : 'Synthetic shared pilot.'} Assignment does not mark arrival.</span>
       {manager && <button className="text-button danger" disabled={!editable || totals.expected === 0} onClick={() => setClearing(state!.day)}>Clear expected bookings</button>}
     </footer>
     {database && state && <Modal title="Dog database" wide close={() => setDatabase(false)}>
@@ -278,6 +279,8 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <p>{infoAssignment?.group_id ? state.groups.find(g => g.group_id === infoAssignment.group_id)?.displayed_name : 'Unassigned'}{infoDog.is_archived ? ' · Archived record' : ''}</p></div></div>
       {repo.demo && <p className="fixture-label">Fictional information · demonstration only</p>}
       <p className="dog-breed-detail">Breed: {infoDog.breed || 'Not recorded'}</p>
+      <ColourEditor key={infoDog.id} dog={infoDog} editable={editable}
+        save={(colour, version) => run(() => repo.saveColour(infoDog.id, colour, version))}/>
       <button disabled={!editable} onClick={() => { setInfoId(null); setPhotoDog(infoDog); }}>Change photo</button>
       <div className="marker-actions" aria-label="Dog markers">
         <button aria-pressed={!!infoDog.groomed} disabled={!editable} onClick={() => void run(() => repo.markers(infoDog.id, !infoDog.groomed, !!infoDog.no_waterpark, infoDog.marker_version || 1))}><Sparkles size={18}/>Groomed/bathed</button>

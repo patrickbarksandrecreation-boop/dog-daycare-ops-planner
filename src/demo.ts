@@ -3,6 +3,7 @@ import { lane, todayBrisbane, runs, photoError } from './model';
 import type { Repository } from './repository';
 import { demoNotes, demoRules } from './behaviour';
 import type { InteractionRule } from './behaviour';
+import { validColour } from './dogColours';
 export type DemoScenario = 'morning' | 'planned' | 'four';
 export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
   const names = ['Alfie', 'Archie', 'Bailey', 'Bella', 'Biscuit', 'Bonnie', 'Charlie', 'Cleo', 'Daisy', 'Finn', 'Frankie', 'Hazel', 'Luna', 'Milo', 'Nala', 'Ollie', 'Poppy', 'Rosie', 'Teddy', 'Winston'];
@@ -19,7 +20,7 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
   const days = new Map<string, Snapshot>();
   const rules: InteractionRule[] = structuredClone(demoRules);
   const audit: unknown[] = [];
-  // Only fictional notes/rules are persisted; live private records remain memory-only.
+  // Only fictional notes/rules/colours are persisted; live private records remain memory-only.
   const storageKey = `dayboard-fictional-behaviour-v1-${scenario}`;
   function loadBehaviour() {
     if (typeof localStorage === 'undefined') return;
@@ -28,6 +29,7 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
     const saved = JSON.parse(raw);
     for (const dog of saved.extraDogs || []) if (!dogs.some(d => d.id === dog.id)) dogs.push(dog);
     for (const dog of dogs) Object.assign(dog, saved.notes?.[dog.id] || {});
+    for (const dog of dogs) Object.assign(dog, saved.colours?.[dog.id] || {});
     rules.splice(0, rules.length, ...saved.rules);
     audit.splice(0, audit.length, ...saved.audit);
   }
@@ -35,6 +37,7 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
     const nextAudit = [...audit, event];
     if (typeof localStorage !== 'undefined') localStorage.setItem(storageKey, JSON.stringify({
       notes: Object.fromEntries(dogs.map(d => [d.id, { handling_notes: d.handling_notes, notes_version: d.notes_version, notes_updated_at: d.notes_updated_at, notes_updated_by: d.notes_updated_by }])),
+      colours: Object.fromEntries(dogs.map(d => [d.id, { card_colour: d.card_colour || '#ffffff', colour_version: d.colour_version || 1 }])),
       rules, audit: nextAudit,
       extraDogs: dogs.filter(d => !d.id.startsWith('demo-')).map(d => ({ ...d, photo_url: undefined })),
     }));
@@ -150,6 +153,16 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
         const before = dog.handling_notes;
         Object.assign(dog, { handling_notes: notes.trim(), notes_version: version + 1, notes_updated_at: new Date().toISOString(), notes_updated_by: 'Demo manager' });
         persistBehaviour({ kind: 'notes', dog: id, before, after: dog.handling_notes, actor: 'Demo manager', at: dog.notes_updated_at });
+      });
+    },
+    async saveColour(id, colour, version) {
+      await editBehaviour(() => {
+        const dog = dogs.find(d => d.id === id);
+        if (!validColour(colour)) throw new Error('Choose a valid card colour.');
+        if (!dog || (dog.colour_version || 1) !== version) throw new Error('Card colour changed or unavailable. Cancel and review the latest colour before trying again.');
+        const before = dog.card_colour || '#ffffff';
+        Object.assign(dog, { card_colour: colour.toLowerCase(), colour_version: version + 1 });
+        persistBehaviour({ kind: 'colour', dog: id, before, after: dog.card_colour, actor: 'Demo manager', at: new Date().toISOString() });
       });
     },
     async saveRule(input) {

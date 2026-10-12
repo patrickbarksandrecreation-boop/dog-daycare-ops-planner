@@ -5,6 +5,7 @@ import { AlertTriangle, Check, Circle, GripVertical, Info, Sparkles, DropletOff 
 import type { Assignment, Dog } from '../model';
 import { Avatar } from './Avatar';
 import { breedLabel } from '../dogLabels';
+import { dogColourStyle } from '../dogColours';
 export function DogCard({ assignment, dog, shortName, selected, disabled, indicator, select, info, arrive }: {
   assignment: Assignment; dog: Dog; selected: boolean; disabled: boolean;
   shortName: string;
@@ -21,7 +22,7 @@ export function DogCard({ assignment, dog, shortName, selected, disabled, indica
   }, []);
   return <article ref={setNodeRef} data-testid={`card-${dog.name}`} data-dog-id={dog.id}
     className={`dog-card ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''} ${assignment.attendance_status}`}
-    style={{ transform: CSS.Transform.toString(transform), transition }}
+    style={{ ...dogColourStyle(dog.card_colour), transform: CSS.Transform.toString(transform), transition }}
     onContextMenu={event => { event.preventDefault(); cancelHold(); info(); }}>
     <button className="drag-handle" {...attributes} {...listeners} disabled={disabled}
       aria-label={`Drag ${dog.name}`} title="Drag to move"><GripVertical size={16}/></button>

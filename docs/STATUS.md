@@ -1,16 +1,44 @@
 # Implementation status
 
+## Shared dog preferences release (approved; 13 October 2026)
+
+The owner explicitly approved both hosted migrations and merging/publication. Handling notes/rules is applied as cloud version `20261012193929`; dog card colours is applied as `20261012193942`. Hosted API acceptance passed colour persistence, simultaneous-write conflicts, validation, direct-write/nonstaff/unauthenticated denial, unchanged profile metadata, handling notes, symmetric rule add/edit/remove and attributed history on dedicated synthetic date 2038-10-13. The test resets colours to White, clears test notes and removes test rules; fictional master dogs/bookings and audit history are retained.
+
+PR #9 integrates the existing compact/loading release. Its initial full GitHub checks passed. Preview acceptance caught duplicate colour controls during authoritative refreshes: colour and behaviour sibling editors used the same React key. Distinct section keys fix reconciliation; all three focused colour browser tests now pass, including repeated shared-board refreshes. Final-head CI and hosted preview/production UI verification are pending at this checkpoint. No production merge yet. Security advisors retain the intentional membership-checked RPC, approved synthetic anonymous access, private-ledger and password-protection notices; new tables use workspace-filtered RLS and explicit read-only grants.
+
+Repeatable opt-in hosted API/two-browser test: `tests/live-dog-preferences.mjs`. Remaining physical-device acceptance is unverified.
+
+## Dog card colours (local; 12 October 2026)
+
+Dog information now offers seven named colour presets (including White), a custom colour picker, preview, Save colour and Cancel colour change. Enrolled staff can set colours independently of manager profile editing. Group and Unassigned cards retain the chosen background while selected; black/white text follows colour luminance. Colours belong to master dogs across dates and groups.
+
+CLI-generated additive migration `20261012105959_dog_card_colours.sql` adds white defaults, validated hex colours, independent versions and a membership/workspace-checked `set_dog_colour` RPC. Existing snapshot and dog Realtime delivery carry the fields. Direct table writes remain denied. Stale drafts cannot overwrite a newer colour. Demo colours persist with fictional notes/rules in browser storage and synchronize across tabs; offline edits are disabled.
+
+Verification: **80 unit/PostgreSQL tests, all 36 Chromium browser tests**, TypeScript/production build and offline PWA check passed. The contrast adjustment received a focused unit rerun. The first broad browser run had a touch-test context destroyed by a development reload during source editing; the final unchanged-source run passed all tests. Phone popup screenshot: `docs/screenshots/dog-colour-mobile.png`. Existing bundle-size warning remains.
+
+**Not applied, merged or deployed.** Read-only hosted migration inspection still shows staff group names as the latest applied migration. Publishing this checkout also requires the earlier handling-notes migration. Hosted colour persistence/Realtime and physical-device acceptance remain unverified. Next step: approve the pending migrations and publication, then verify with independent staff sessions on synthetic records.
+
 ## Loading and persistence responsiveness (local; 12 October 2026)
 
 Requests now show explicit loading/refreshing; Retry appears only after failure, and empty days are identified separately. Private-photo signing enriches the latest board in the background with shared in-flight requests and session invalidation. Focus/health refreshes coalesce; version checks, post-save reconciliation and Realtime catch-up remain intact. Controlled paired timings: first board **1,301 → 559 ms**, save with a new photo path **1,263 → 512 ms**, with injected 800 ms signing latency. These are local measurements, not production claims.
 
-Verification: **76 unit/PostgreSQL tests, 34 Chromium tests**, frontend/Edge type checks, production build and offline PWA check passed. Hosted RPC statistics and migration ledger were inspected read-only; the original development branch required an unapplied handling-notes migration. This release cherry-picks only loading and compact tiles onto main; it excludes that feature and requires no new migration. Hosted two-staff acceptance and real-device timings remain unverified. Existing bundle warning remains. No merge/deployment/backend changes. See [investigation, measurements and next step](LOADING-PERFORMANCE.md).
+Verification: **76 unit/PostgreSQL tests, 34 Chromium tests**, frontend/Edge type checks, production build and offline PWA check passed. Hosted RPC statistics and migration ledger were inspected read-only; this branch still requires the unapplied handling-notes migration, so hosted two-staff acceptance and real-device timings remain unverified. Existing bundle warning remains. No merge/deployment/backend changes. See [investigation, measurements and next step](LOADING-PERFORMANCE.md).
 
 ## Compact group tiles (local; 12 October 2026)
 
 Group-only CSS uses 68px desktop / 78px mobile minimum columns, 66px / 70px tile heights and 4px grid gaps. Names remain 13px and abbreviated breeds 11px; photos, grip dragging, tap moves and hold details remain available. Unassigned and database styles/data are unchanged. Resize coverage now adds 30 bookings to exercise panel growth with smaller tiles.
 
 Validation: build and 74 unit/database tests passed; final focused Chromium desktop density, pointer drag/reorder, panel growth and 390px touch tests passed (4/4). Desktop shows 90 complete grouped tiles at normal zoom without horizontal overflow; mobile fits four columns. Broader browser runs encountered trace-output collisions and development reloads during concurrent workspace edits; the final focused run used separate output. Existing bundle-size warning remains. Physical devices are unverified. No merge or deployment; next step is review the local CSS and screenshots.
+
+## Handling notes and interaction rules (implemented locally; 12 October 2026)
+
+`codex/handling-notes-interaction-rules` adds staff-editable multiline notes, searchable dog selection with photo/breed, symmetric Hard/Soft pair rules, editing and confirmed removal. Hard/red and Soft/amber are independent of Planned/Present attendance. Warnings name both dogs and the note and remain advisory. Existing panels, group names, attendance, movement, markers/runs and photos are preserved.
+
+New additive migration `20261012044344_handling_notes_interaction_rules.sql` provides workspace isolation, composite dog references, distinct canonical pairs, uniqueness, staff-only version-checked RPCs and append-only attributed before/after audit history. Rule changes refresh both dogs through existing Realtime subscriptions. Demo notes/rules persist in browser storage with same-browser tab synchronization and stale-write protection. Offline mode retains last-loaded viewing and disables editing. See [HANDLING-NOTES-RULES.md](HANDLING-NOTES-RULES.md).
+
+Verification: **74 unit/database tests and all 26 Chromium browser tests passed**, including five focused new browser tests. Frontend/Edge type checks, production build and PWA validation passed. Desktop regression measured **72 complete cards at 1920×1080**, normal zoom, no horizontal overflow. Mobile keyboard editing passed at 390px; screenshots are `handling-rules-mobile.png` and `handling-rules-desktop.png`. The production build retains the non-blocking bundle-size warning (558 kB before gzip).
+
+**Not applied, merged or deployed.** Hosted two-staff delivery, real multi-connection contention and physical-device acceptance are unverified. PGlite runs actual PostgreSQL constraints/RLS but serializes submitted competing writes; two-tab synchronization coverage is fictional demo mode. No audit browser UI is included. Cloud offline viewing remains memory-only; a cold offline reload cannot recover private records. Next step: review this commit, then explicitly authorize the additive hosted migration and two-staff acceptance before any deployment.
 
 ## Editable group names (released; verified 12 October 2026)
 
@@ -55,8 +83,8 @@ The connected migration service assigns cloud versions different from local file
 - Browser anonymous identity and a typed name are not verified employee identity. Enrollment is openly joinable for synthetic data. CAPTCHA/abuse controls, controlled admission and a privacy review are required before considering real records.
 - Staff creation, initial private photo upload, denied existing-profile edits/archive/uploads/rename/clear, cross-workspace and revoked-membership denial have local PostgreSQL coverage. Dedicated hosted cross-workspace, manager and revocation tests remain outstanding. Test physical Android/PWA use and multiple real devices.
 - Post-migration advisors report the deliberately inaccessible enrollment ledger, authenticated SECURITY DEFINER RPCs, the approved anonymous-session policies and disabled leaked-password protection (the trial uses anonymous identities). Their explicit grants, membership checks, empty search paths and scoped operations are reviewed and locally tested; see ANONYMOUS-PILOT.md.
-- No behavioural-note backend or Petboost integration. Cloud interaction rules are unconfigured; demo rules remain fictional. Marker/run changes are not movement-audit events. Audit history starts when migration 003 was applied; database owners retain administrative powers.
-- Source checkout: `main`, including approved PR #5 merge `e84b601`.
+- The deployed release still has no handling-note backend or configured cloud interaction rules; this branch adds them pending approval. No Petboost integration exists. Marker/run changes are not movement-audit events. Movement history starts when migration 003 was applied; behaviour history will start when the new migration is applied. Database owners retain administrative powers.
+- Current feature branch: `codex/handling-notes-interaction-rules`, based on `e563987` after the approved group-name release.
 
 ## Dog cards, breed information and staff photo replacement (approved release)
 

@@ -48,7 +48,7 @@ These figures do not include HTTP, Auth, Storage, image transfer or device rende
 - **76 unit/PostgreSQL tests passed**, including signing reuse/expiry/failure, identity invalidation, stale write checks and access controls.
 - **34 Chromium tests passed**: intercepted Auth/REST login, remembered-session reload, initial failure/retry, empty days, slow photos, stale enrichment, events during reads, duplicate-click suppression, committed-but-lost save responses, failed reconciliation, stale staff edits, existing two-tab demo notes/rules, mobile and board workflows.
 - Frontend/Edge type checks, production build and production-shell offline PWA check passed. Existing bundle-size warning remains.
-- Hosted migration ledger was checked read-only: handling-notes migration is absent (latest cloud version `20261011103645`). The original development branch's snapshot validation intentionally refused that backend. The release cherry-picks loading and compact tiles onto main, excluding the handling-notes feature; no new backend migration is required.
+- Hosted migration ledger was checked read-only: handling-notes migration is absent (latest cloud version `20261011103645`). This branch's snapshot validation intentionally refuses that backend. No migration was applied to bypass it.
 - Mocked HTTP/Realtime and PGlite are not hosted multi-device acceptance. Live slow-request traces, hosted two-staff contention/delivery, realistic image transfer and physical-device timing remain unverified. Local PostgreSQL tests serialize submitted competing transactions.
 
 Next: review this local patch, then run hosted two-staff/timing acceptance against a backend already compatible with this branch before any separately authorized release.

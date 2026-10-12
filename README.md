@@ -20,7 +20,7 @@ Open `http://127.0.0.1:5173`. Select a **Demo scenario**, then **Explore the dem
 - **Planned day:** 90 dogs assigned to three groups, ten unassigned; a mixture of Expected and Present, with fictional planned/present conflicts.
 - **Four groups:** a future-layout fixture with four data-driven columns.
 
-There are 110 fictional master dog records, so ten remain unbooked and can be found through Dog database. Demo changes last only for the session and reset on refresh. Demo is not shared persistence. The active Supabase project has the application migrations and 20 fictional master dogs. Anonymous access uses a display name. See [current status](docs/STATUS.md) for live acceptance and deployment evidence.
+There are 110 fictional master dog records, so ten remain unbooked and can be found through Dog database. Demo bookings and attendance reset on refresh; fictional notes/rules persist in this browser and synchronize between tabs. Demo is not cross-device shared storage. The active Supabase project has the previously released migrations and 20 fictional master dogs; the new handling-notes migration is not yet applied. Anonymous access uses a display name. See [current status](docs/STATUS.md) for live acceptance and deployment evidence.
 
 ## Everyday operation
 
@@ -35,7 +35,7 @@ There are 110 fictional master dog records, so ten remain unbooked and can be fo
 9. Group pencils rename inline; optionally save the default for newly opened days. Already-created dates retain their label snapshots. Navigate dates or use **Today** in Australia/Brisbane; yesterday's records are never copied automatically.
 10. On phones, group tabs switch views. With a card selected they become destinations; a drag can also drop on a tab. The horizontally scrollable Unassigned strip remains available above them.
 
-Amber demo warnings identify a planned conflict where at least one dog is Expected. Red identifies two incompatible demo dogs currently Present together. Moves, arrivals and departures recalculate warnings from confirmed composition. Demo notes and rules are explicitly fictional and keyed by stable IDs. **Cloud behaviour rules are not configured in this iteration; no warning is not a safety assessment.**
+Dog information offers **Edit notes** and **Add rule**, with searchable dog selection, Hard/Soft instructions, editing and confirmed removal. One symmetric rule appears on both profiles. **Hard — Must not mix.** warns in red; **Soft — Monitor closely and assess.** warns in amber. Planned means at least one dog is Expected; Present means both are Present. Departed dogs do not create group warnings. Warnings identify both dogs and the note, and never block moves or attendance. No warning is a safety assessment. Shared editing requires the unapplied migration described in [HANDLING-NOTES-RULES.md](docs/HANDLING-NOTES-RULES.md).
 
 ## Configure Supabase
 

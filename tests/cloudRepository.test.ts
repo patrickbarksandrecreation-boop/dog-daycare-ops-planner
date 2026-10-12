@@ -11,42 +11,69 @@ function fixture() {
   let callback:(state:string)=>void=()=>{};
   const channel={on:vi.fn().mockReturnThis(),subscribe:vi.fn((fn:(state:string)=>void)=>{callback=fn;return channel;})};
   const db={rpc,auth:{getSession:session,signOut:vi.fn(async()=>({error:null}))},from:()=>({select:()=>({eq:()=>({single})})}),storage:{from:()=>({createSignedUrls:signing})},channel:()=>channel,removeChannel:vi.fn()};
-  return {repo:cloudRepository(db as unknown as SupabaseClient),state,rpc,signing,single,callback:(s:string)=>callback(s),switchUser:()=>{user='staff-b';}};
+  const repo = cloudRepository(db as unknown as SupabaseClient);
+  return {repo, read: async (date:string) => repo.photos!(await repo.snapshot(date)),state,rpc,signing,single,callback:(s:string)=>callback(s),switchUser:()=>{user='staff-b';}};
 }
 afterEach(()=>{vi.useRealTimers();});
+it('returns authoritative state before photo signing and shares in-flight signing',async()=>{
+  const f=fixture(); let release!:()=>void;
+  f.signing.mockImplementationOnce(async paths=>{
+    await new Promise<void>(resolve=>{release=resolve;});
+    return {data:paths.map(path=>({path,signedUrl:'signed:'+path,error:null})),error:null};
+  });
+  const state=await f.repo.snapshot('2026-01-01');
+  expect(f.signing).not.toHaveBeenCalled();
+  const a=f.repo.photos!(state), b=f.repo.photos!(state);
+  await vi.waitFor(()=>expect(f.signing).toHaveBeenCalledTimes(1));
+  release(); const [first,second]=await Promise.all([a,b]);
+  expect(first.dogs[0].photo_url).toBe(second.dogs[0].photo_url);
+  expect(state.dogs[0].photo_url).toBeUndefined();
+});
+it('does not repopulate photo caches when an old signing request completes after sign-out',async()=>{
+  const f=fixture(); let release!:()=>void;
+  f.signing.mockImplementationOnce(async paths=>{
+    await new Promise<void>(resolve=>{release=resolve;});
+    return {data:paths.map(path=>({path,signedUrl:'signed:'+path,error:null})),error:null};
+  });
+  const state=await f.repo.snapshot('2026-01-01'), pending=f.repo.photos!(state);
+  await vi.waitFor(()=>expect(f.signing).toHaveBeenCalledTimes(1));
+  await f.repo.signOut(); release();
+  expect((await pending).dogs[0].photo_url).toBeUndefined();
+  await f.read('2026-01-01'); expect(f.signing).toHaveBeenCalledTimes(2);
+});
 it('refreshes authorised state each time while preparing a date and signing unchanged photos once',async()=>{
   const f=fixture(); await f.repo.profile();
-  const a=await f.repo.snapshot('2026-01-01'); const b=await f.repo.snapshot('2026-01-01');
+  const a=await f.read('2026-01-01'); const b=await f.read('2026-01-01');
   expect(f.rpc.mock.calls.map(c=>c[0])).toEqual(['ensure_planning_day','planning_snapshot','planning_snapshot']);
   expect(f.signing).toHaveBeenCalledTimes(1); expect(a.dogs[0].photo_url).toBe(b.dogs[0].photo_url);
-  await f.repo.snapshot('2026-01-02'); expect(f.rpc.mock.calls.filter(c=>c[0]==='ensure_planning_day')).toHaveLength(2);
+  await f.read('2026-01-02'); expect(f.rpc.mock.calls.filter(c=>c[0]==='ensure_planning_day')).toHaveLength(2);
   expect(f.signing).toHaveBeenCalledTimes(1);
 });
 it('signs only changed paths and renews links before they expire',async()=>{
-  vi.useFakeTimers();const f=fixture();await f.repo.snapshot('2026-01-01');
-  f.state.dogs[0].photo_path='workspace/dog/new.jpg';await f.repo.snapshot('2026-01-01');
+  vi.useFakeTimers();const f=fixture();await f.read('2026-01-01');
+  f.state.dogs[0].photo_path='workspace/dog/new.jpg';await f.read('2026-01-01');
   expect(f.signing.mock.calls[1][0]).toEqual(['workspace/dog/new.jpg']);
-  vi.advanceTimersByTime(56*60_000);await f.repo.snapshot('2026-01-01');expect(f.signing).toHaveBeenCalledTimes(3);
+  vi.advanceTimersByTime(56*60_000);await f.read('2026-01-01');expect(f.signing).toHaveBeenCalledTimes(3);
 });
 it('never serves cached roster state after access is denied, and checks current staff permissions on every profile read',async()=>{
-  const f=fixture();await f.repo.snapshot('2026-01-01');await f.repo.profile();await f.repo.profile();
+  const f=fixture();await f.read('2026-01-01');await f.repo.profile();await f.repo.profile();
   expect(f.single).toHaveBeenCalledTimes(2);
   f.rpc.mockResolvedValueOnce({data:null,error:{message:'Staff access required'}});
-  await expect(f.repo.snapshot('2026-01-01')).rejects.toThrow('Staff access required');
+  await expect(f.read('2026-01-01')).rejects.toThrow('Staff access required');
 });
 it('retries a failed date preparation instead of caching its rejection',async()=>{
   const f=fixture();f.rpc.mockResolvedValueOnce({data:null,error:{message:'Network failed'}});
-  await expect(f.repo.snapshot('2026-01-01')).rejects.toThrow('Network failed');
-  await f.repo.snapshot('2026-01-01');expect(f.rpc.mock.calls.filter(c=>c[0]==='ensure_planning_day')).toHaveLength(2);
+  await expect(f.read('2026-01-01')).rejects.toThrow('Network failed');
+  await f.read('2026-01-01');expect(f.rpc.mock.calls.filter(c=>c[0]==='ensure_planning_day')).toHaveLength(2);
 });
 it('clears session-scoped caches when the identity changes and at sign out',async()=>{
-  const f=fixture();await f.repo.snapshot('2026-01-01');f.switchUser();await f.repo.snapshot('2026-01-01');
-  expect(f.signing).toHaveBeenCalledTimes(2);await f.repo.signOut();await f.repo.snapshot('2026-01-01');
+  const f=fixture();await f.read('2026-01-01');f.switchUser();await f.read('2026-01-01');
+  expect(f.signing).toHaveBeenCalledTimes(2);await f.repo.signOut();await f.read('2026-01-01');
   expect(f.signing).toHaveBeenCalledTimes(3);
 });
 it('retries missing photo links instead of permanently caching a signing failure',async()=>{
-  const f=fixture();f.signing.mockResolvedValueOnce({data:[],error:null});const a=await f.repo.snapshot('2026-01-01');
-  expect(a.dogs[0].photo_url).toBeUndefined();await f.repo.snapshot('2026-01-01');expect(f.signing).toHaveBeenCalledTimes(2);
+  const f=fixture();f.signing.mockResolvedValueOnce({data:[],error:null});const a=await f.read('2026-01-01');
+  expect(a.dogs[0].photo_url).toBeUndefined();await f.read('2026-01-01');expect(f.signing).toHaveBeenCalledTimes(2);
 });
 it('reports subscription readiness once without issuing a second duplicate change callback',()=>{
   const f=fixture(),changed=vi.fn(),status=vi.fn();const stop=f.repo.watch('2026-01-01',changed,status);

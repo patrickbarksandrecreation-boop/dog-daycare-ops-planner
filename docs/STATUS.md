@@ -1,10 +1,12 @@
 # Implementation status
 
-## Editable group names (branch work, 11 October 2026)
+## Editable group names (released; verified 12 October 2026)
 
 `codex/editable-group-names` enables the existing pencil/name form for all enrolled staff on an editable board. Opening it clears the dog selection. Names are trimmed and limited to 1–40 characters; Cancel discards edits, and the optional future-day default remains available. Additive migration `20261011103159_staff_group_names.sql` permits staff rename RPCs while retaining day locking, workspace/membership checks, scoped updates and anonymous execution denial. Earlier staff-rename denial notes below describe the deployed release.
 
-Local verification: 64 unit/database tests, production build, and two focused Chromium rename tests passed. The owner approved migration and deployment. Migration applied as cloud version `20261011103645`; hosted acceptance passed staff renaming, trimming, second-session visibility, validation, and nonstaff/unauthenticated denial on dedicated synthetic date 2038-10-11. Its original label was restored. `tests/live-group-names.mjs` provides opt-in API and deployed two-browser acceptance. Security advisors retain the documented membership-checked RPC and synthetic-pilot notices. Frontend publication and deployed UI verification are pending.
+Local verification: 64 unit/database tests, production build, and two focused Chromium rename tests passed. The owner approved migration and deployment. Migration applied as cloud version `20261011103645`; hosted acceptance passed staff renaming, trimming, second-session visibility, validation, and nonstaff/unauthenticated denial on dedicated synthetic date 2038-10-11. Its original label was restored. `tests/live-group-names.mjs` provides opt-in API and deployed two-browser acceptance. Security advisors retain the documented membership-checked RPC and synthetic-pilot notices.
+
+PR #7 merged as `cbdd98f`, retaining the resizable-panel release. [GitHub checks](https://github.com/patrickbarksandrecreation-boop/dog-daycare-ops-planner/actions/runs/38132727750) passed the integrated unit/database, Edge, build, 21-browser-test and PWA checks. Netlify production serves the same `index-BvEjXclQ.js` bundle as the verified preview. Two independent staff browsers passed renaming, realtime convergence and reload persistence on both preview and production. Acceptance restored the original synthetic label and did not alter assignments or future-day defaults. Physical-device acceptance remains outstanding.
 
 Verified 11 October 2026. [WORKFLOW.md](WORKFLOW.md) governs the approved board; [ANONYMOUS-PILOT.md](ANONYMOUS-PILOT.md) governs authentication and enrollment. The owner approved anonymous sessions, cloud changes and deployment.
 

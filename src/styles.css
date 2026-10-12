@@ -305,7 +305,8 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .lane-layout > .group-board { display:contents; }
   .lane-layout .group-lane { height:auto; min-height:var(--panel-min-height, 240px); padding-bottom:22px; }
   .lane-layout .group-grid, .lane-layout .unassigned-cards { grid-auto-flow:row; grid-template-rows:none; grid-auto-columns:auto; overflow:visible; min-height:0; align-content:start; }
-  .lane-layout .group-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,68px),1fr)); }
+  /* Keep empty columns so quiet days use the same tile size as full groups. */
+  .lane-layout .group-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,68px),1fr)); }
   .lane-layout .unassigned-cards { grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); padding:8px; }
   .lane-layout .strip-empty { grid-column:1 / -1; grid-row:auto; width:auto; max-width:100%; padding:12px 0; }
   .lane-layout .unassigned-toolbar { flex-wrap:wrap; gap:8px; padding:8px; }

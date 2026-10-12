@@ -1,5 +1,11 @@
 # Implementation status
 
+## Sparse-date group tile fix (13 October 2026)
+
+Desktop group grids retain empty columns (`auto-fill`) instead of collapsing them (`auto-fit`). A full Monday group had 71px tiles, but a later date with one dog stretched its tile to 448px. Sparse dates now keep the same compact tile and photo dimensions. Unassigned, database, mobile styles and placement logic are unchanged.
+
+Regression tests cover full Monday → sparse Tuesday/Wednesday → Monday, names/breeds/photo dimensions, bounds and mouse/touch moves into another sparse group. Both new browser tests pass. Build, 80 unit/PostgreSQL tests, Edge and PWA checks pass; the 39-test browser run had one existing panel-growth timeout under concurrent load, which passed alone (all 39 tests covered successfully). CI gates publication; physical devices remain unverified.
+
 ## Shared dog preferences release (approved; 13 October 2026)
 
 The owner explicitly approved both hosted migrations and merging/publication. Handling notes/rules is applied as cloud version `20261012193929`; dog card colours is applied as `20261012193942`. Hosted API acceptance passed colour persistence, simultaneous-write conflicts, validation, direct-write/nonstaff/unauthenticated denial, unchanged profile metadata, handling notes, symmetric rule add/edit/remove and attributed history on dedicated synthetic date 2038-10-13. The test resets colours to White, clears test notes and removes test rules; fictional master dogs/bookings and audit history are retained.

@@ -7,6 +7,8 @@ export function usePlanner(repo: Repository, date: string) {
   const [connection, setConnection] = useState<Connection>('connecting');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(true);
   const [browserOnline, setBrowserOnline] = useState(navigator.onLine);
   const [retry, setRetry] = useState(0);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
@@ -22,10 +24,14 @@ export function usePlanner(repo: Repository, date: string) {
     let pending: Promise<void> | null = null;
     setConnection(browserOnline ? 'connecting' : 'offline');
     setSnapshot(previous => previous?.day.local_date === date ? previous : null);
-    async function refresh() {
+    setLoadError('');
+    setLoading(browserOnline);
+    async function refresh(invalidate = true) {
       if (!active || !browserOnline) return;
+      if (pending && !invalidate) return pending;
       dirty = true;
       if (pending) return pending;
+      setLoading(true); setLoadError('');
       pending = (async () => {
         while (dirty && active) {
           dirty = false;
@@ -33,14 +39,18 @@ export function usePlanner(repo: Repository, date: string) {
             const [user, state] = await Promise.all([repo.profile(), repo.snapshot(date)]);
             if (active) {
               setProfile(user); setSnapshot(state);
+              setLoadError('');
               setConnection(subscribed ? 'online' : 'connecting');
+              if (repo.photos) void repo.photos(state).then(enriched => {
+                if (active) setSnapshot(current => current === state ? enriched : current);
+              }).catch(() => { /* Initials remain usable; the next refresh retries signing. */ });
             }
           } catch (e) {
-            if (active) { setConnection('offline'); setError(e instanceof Error ? e.message : 'Unable to load the board.'); }
+            if (active) { setConnection('offline'); setLoadError(e instanceof Error ? e.message : 'Unable to load the board.'); }
             dirty = false;
           }
         }
-      })().finally(() => { pending = null; });
+      })().finally(() => { pending = null; if (active) setLoading(false); });
       return pending;
     }
     refreshRef.current = refresh;
@@ -56,10 +66,10 @@ export function usePlanner(repo: Repository, date: string) {
       if (!subscribed) setConnection(status);
       else void refresh();
     }) : () => {};
-    void refresh();
+    void refresh(false);
     // Revalidate after missed events, token refresh, device sleep, or a revoked staff profile.
-    const poll = window.setInterval(() => { void refresh(); }, 30_000);
-    const focus = () => { void refresh(); };
+    const poll = window.setInterval(() => { void refresh(false); }, 30_000);
+    const focus = () => { void refresh(false); };
     window.addEventListener('focus', focus);
     return () => { active = false; unsubscribe(); clearTimeout(eventTimer); clearInterval(poll); window.removeEventListener('focus', focus); };
   }, [repo, date, browserOnline, retry]);
@@ -72,5 +82,7 @@ export function usePlanner(repo: Repository, date: string) {
     finally { writePendingRef.current = false; await refreshRef.current(); busyRef.current = false; setBusy(false); }
     return saved;
   }, [connection, browserOnline]);
-  return { snapshot, profile, connection, busy, error, setError, run, refresh: () => setRetry(value => value + 1), editable: connection === 'online' && browserOnline && !busy };
+  return { snapshot, profile, connection, busy, loading, loadError, error: [error, loadError].filter(Boolean).join(' '), setError, run,
+    refresh: () => { setLoadError(''); setLoading(true); setRetry(value => value + 1); },
+    editable: connection === 'online' && browserOnline && !busy };
 }

@@ -79,7 +79,7 @@ const collision: CollisionDetection = args => {
 export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void }) {
   const [date, setDate] = useState(todayBrisbane());
   const panels = usePanelSizes();
-  const { snapshot: state, profile, connection, busy, error, setError, run, refresh, editable } = usePlanner(repo, date);
+  const { snapshot: state, profile, connection, busy, loading, loadError, error, setError, run, refresh, editable } = usePlanner(repo, date);
   const [view, setView] = useState('group-1');
   const [search, setSearch] = useState('');
   const [databaseSearch, setDatabaseSearch] = useState('');
@@ -163,7 +163,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         indicator={(state!.groups.some(g => runWarnings([a], state!.dogs, g).length) ? 'Water park warning — open dog information' : rules.some(r => r.active && r.dogs.includes(a.dog_id)) ? 'Interaction rule — open dog information' : undefined)}
         select={() => setSelection(selection?.id === a.id ? null : a)}
         info={() => showInfo(a.dog_id)} arrive={() => void attendance(a, 'present')}/>)}
-      {group === null && !filtered.length && <p className="strip-empty">{search ? 'No matching unassigned dogs.' : 'All booked dogs are assigned. Book another dog using Dog database.'}</p>}
+      {group === null && !filtered.length && <p className="strip-empty">{search ? 'No matching unassigned dogs.' : !state?.assignments.length ? 'No dogs booked for this day. Book a dog using Dog database.' : 'All booked dogs are assigned. Book another dog using Dog database.'}</p>}
     </SortableContext>;
   }
   const selectedName = selection ? dogsById.get(selection.dog_id)?.name : undefined;
@@ -178,7 +178,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <button className="icon-button" aria-label="Next day" disabled={busy} onClick={() => offsetDate(1)}><ArrowRight size={15}/></button>
         <button className="today" disabled={busy} onClick={() => changeDate(todayBrisbane())}>Today</button>
       </div>
-      <span className={`connection ${connection}`} role="status"><i/>{busy ? 'Saving…' : connection === 'online' ? repo.demo ? 'Demo · session only' : 'Live · saved' : connection === 'offline' ? 'Offline · view only' : 'Connecting…'}</span>
+      <span className={`connection ${connection}`} role="status"><i/>{busy ? 'Saving…' : loading ? state ? 'Refreshing…' : 'Loading…' : connection === 'online' ? repo.demo ? 'Demo · session only' : 'Live · saved' : connection === 'offline' ? 'Offline · view only' : 'Connecting…'}</span>
       <button className="icon-button" aria-label={repo.demo ? 'Exit demo' : 'Sign out'} onClick={async () => {
         try { await repo.signOut(); onExit(); } catch (e) { setError(e instanceof Error ? e.message : 'Sign out failed.'); }
       }}><LogOut size={17}/></button>
@@ -193,9 +193,9 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       </div>
       <button className="text-button" onClick={() => setHistory(true)} disabled={!state}><History size={15}/>Day records</button>
     </div>
-    {error && <div className="notice error" role="alert"><span>{error}</span><button onClick={() => { setError(''); refresh(); }}>Retry</button><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button></div>}
-    {connection === 'offline' && <div className="notice offline">Editing paused. Last loaded board shown; reconnect to save changes.</div>}
-    {!state ? <main className="loading-board"><PawPrint size={35}/><h2>Opening the daily board…</h2><button onClick={refresh}>Retry connection</button></main> :
+    {error && <div className="notice error" role="alert"><span>{error}</span>{!loading && <button onClick={() => { setError(''); refresh(); }}>Retry</button>}{!loadError && <button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button>}</div>}
+    {connection === 'offline' && <div className="notice offline">Editing paused. {state ? 'Last loaded board shown; reconnect to save changes.' : 'Reconnect to load the board.'}</div>}
+    {!state ? <main className="loading-board" aria-busy={loading}><PawPrint size={35}/><h2 role="status">{loading ? 'Opening the daily board…' : loadError ? 'Unable to open the daily board.' : 'Waiting for a connection…'}</h2></main> :
       <DndContext sensors={sensors} collisionDetection={collision}
         onDragStart={event => { setSelection(null); setDrag(state.assignments.find(a => a.id === event.active.id) || null); }}
         onDragCancel={() => setDrag(null)} onDragEnd={onDrop}>

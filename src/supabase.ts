@@ -11,7 +11,9 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
   // Session-scoped, memory-only caches: never persist private roster or photo URLs.
   const preparedDates = new Map<string, Promise<unknown>>();
   const photoLinks = new Map<string, { url: string; expires: number }>();
-  const clearCaches = () => { preparedDates.clear(); photoLinks.clear(); };
+  const signing = new Map<string, Promise<void>>();
+  let cacheGeneration = 0;
+  const clearCaches = () => { cacheGeneration++; preparedDates.clear(); photoLinks.clear(); signing.clear(); };
   let cacheUser: string | undefined;
   async function sessionUser() {
     const { data: { session }, error } = await db.auth.getSession();
@@ -50,20 +52,37 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
       if (state.assignments.some(a => !a.attendance_status)) {
         throw new Error('The attendance migration is required. Apply 002_attendance.sql before using this board.');
       }
+      for (const dog of state.dogs) {
+        const link = dog.photo_path ? photoLinks.get(dog.photo_path) : undefined;
+        dog.photo_url = link && link.expires > Date.now() ? link.url : undefined;
+      }
+      return state;
+    },
+    async photos(state) {
+      await sessionUser();
+      const generation = cacheGeneration;
       const paths = [...new Set(state.dogs.map(d => d.photo_path).filter((p): p is string => !!p))];
       if (paths.length) {
         const now = Date.now();
         for (const [path, link] of photoLinks) if (link.expires <= now || !paths.includes(path)) photoLinks.delete(path);
-        const missing = paths.filter(path => !photoLinks.has(path));
+        const missing = paths.filter(path => !photoLinks.has(path) && !signing.has(path));
         if (missing.length) {
-          const { data } = await db.storage.from('dog-photos').createSignedUrls(missing, 3600);
-          for (const link of data || []) if (link.path && link.signedUrl && !link.error) {
-            photoLinks.set(link.path, { url: link.signedUrl, expires: now + 55 * 60_000 });
-          }
+          const request = (async () => {
+            const { data } = await db.storage.from('dog-photos').createSignedUrls(missing, 3600);
+            if (generation !== cacheGeneration) return;
+            for (const link of data || []) if (link.path && link.signedUrl && !link.error) {
+              photoLinks.set(link.path, { url: link.signedUrl, expires: now + 55 * 60_000 });
+            }
+          })().finally(() => {
+            if (generation === cacheGeneration) for (const path of missing) signing.delete(path);
+          });
+          for (const path of missing) signing.set(path, request);
         }
-        for (const dog of state.dogs) dog.photo_url = dog.photo_path ? photoLinks.get(dog.photo_path)?.url : undefined;
+        await Promise.all(paths.map(path => signing.get(path)));
       }
-      return state;
+      // Never mutate an already-rendered snapshot or resurrect URLs after sign-out.
+      return { ...state, dogs: state.dogs.map(dog => ({ ...dog, photo_url:
+        generation === cacheGeneration && dog.photo_path ? photoLinks.get(dog.photo_path)?.url : undefined })) };
     },
     watch(date, changed, status) {
       const channel = db.channel(`board:${date}:${crypto.randomUUID()}`)

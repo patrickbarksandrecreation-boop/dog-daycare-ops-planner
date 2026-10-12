@@ -179,6 +179,10 @@ test('1920×1080 density shows at least 70 complete group cards at normal zoom',
   });
   expect(measure.visible).toBeGreaterThanOrEqual(70); expect(measure.zoom).toBe(1);
   expect(measure.overflow).toBe(false); expect(measure.font).toBeGreaterThanOrEqual(13);
+  const tile = page.locator('.group-grid .dog-card').first();
+  expect((await tile.boundingBox())!.width).toBeLessThan(75);
+  expect((await tile.boundingBox())!.height).toBe(66);
+  await expect(tile.locator('.dog-name')).toHaveCSS('font-size','13px');
   await mkdir('docs/screenshots',{recursive:true});
   await page.screenshot({path:'docs/screenshots/desktop-1920.png'});
   console.log('Density measurement:',JSON.stringify(measure));
@@ -194,6 +198,9 @@ test('390px touch supports tap moves, stationary hold and grip drag without conf
   const page=await context.newPage();
   try {
     await demo(page);
+    const tile = page.locator('.current-view .group-grid .dog-card').first();
+    expect((await tile.boundingBox())!.width).toBeLessThan(90);
+    expect((await tile.boundingBox())!.height).toBe(70);
     await page.getByRole('button',{name:'Select Archie',exact:true}).tap();
     await page.getByRole('button',{name:'Send selected dog to Group 2',exact:true}).tap();
     await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toHaveCount(1);

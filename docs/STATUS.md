@@ -1,5 +1,11 @@
 # Implementation status
 
+## Compact group tiles (local; 12 October 2026)
+
+Group-only CSS uses 68px desktop / 78px mobile minimum columns, 66px / 70px tile heights and 4px grid gaps. Names remain 13px and abbreviated breeds 11px; photos, grip dragging, tap moves and hold details remain available. Unassigned and database styles/data are unchanged. Resize coverage now adds 30 bookings to exercise panel growth with smaller tiles.
+
+Validation: build and 74 unit/database tests passed; final focused Chromium desktop density, pointer drag/reorder, panel growth and 390px touch tests passed (4/4). Desktop shows 90 complete grouped tiles at normal zoom without horizontal overflow; mobile fits four columns. Broader browser runs encountered trace-output collisions and development reloads during concurrent workspace edits; the final focused run used separate output. Existing bundle-size warning remains. Physical devices are unverified. No merge or deployment; next step is review the local CSS and screenshots.
+
 ## Handling notes and interaction rules (implemented locally; 12 October 2026)
 
 `codex/handling-notes-interaction-rules` adds staff-editable multiline notes, searchable dog selection with photo/breed, symmetric Hard/Soft pair rules, editing and confirmed removal. Hard/red and Soft/amber are independent of Planned/Present attendance. Warnings name both dogs and the note and remain advisory. Existing panels, group names, attendance, movement, markers/runs and photos are preserved.

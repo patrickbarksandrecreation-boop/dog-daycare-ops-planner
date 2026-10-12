@@ -52,8 +52,9 @@ test('vertical resizing sets a floor while additional dogs automatically extend 
   const initial=(await geometry(page))[1].height;
   await handle.focus(); await page.keyboard.press('ArrowDown');
   expect((await geometry(page))[1].height).toBeGreaterThanOrEqual(initial+31);
-  for(const name of ['Alfie','Archie','Bella','Biscuit','Bonnie','Charlie','Cleo','Daisy','Finn','Frankie']) {
-    await page.getByRole('button',{name:'Select '+name,exact:true}).click();
+  // Compact tiles need more bookings to exceed the resized panel floor.
+  for(let i=0;i<30;i++) {
+    await page.getByTestId('lane-unassigned').getByRole('button',{name:/^Select /}).first().click();
     await page.getByRole('button',{name:'Move selected dog to Group 1',exact:true}).click();
   }
   const group=(await geometry(page))[1]; expect(group.height).toBeGreaterThan(initial+32); expect(group.allInside).toBe(true);

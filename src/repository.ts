@@ -1,5 +1,6 @@
 import type { Attendance, Connection, Dog, Profile, Snapshot, Run } from './model';
 import type { InteractionRule } from './behaviour';
+import type { SelectedAssignment } from './selection';
 export interface Repository {
   demo: boolean;
   profile(): Promise<Profile>;
@@ -9,6 +10,7 @@ export interface Repository {
   watch(date: string, changed: () => void, status: (value: Connection) => void): () => void;
   add(day: string, dog: string): Promise<void>;
   move(day: string, assignment: string, group: string | null, before: string | null, version: number): Promise<void>;
+  moveMany(day: string, assignments: SelectedAssignment[], group: string | null): Promise<void>;
   remove(day: string, assignment: string, version: number): Promise<void>;
   attendance(day: string, assignment: string, status: Attendance, version: number): Promise<void>;
   rename(day: string, group: string, name: string, useDefault: boolean): Promise<void>;

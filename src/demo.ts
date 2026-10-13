@@ -119,6 +119,20 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
       order.splice(index < 0 ? order.length : index, 0, a);
       order.forEach((a, i) => { a.sort_order = i; }); changed(date);
     },
+    async moveMany(date, selections, group) {
+      if (!selections.length || new Set(selections.map(a => a.id)).size !== selections.length) throw new Error('Select distinct dogs before moving.');
+      if (group !== null && !day(date).groups.some(g => g.group_id === group)) throw new Error('Invalid destination. No selected dogs moved.');
+      const selected = selections.map(s => {
+        const a = checked(date, s.id, s.version);
+        if (a.group_id !== s.group_id || a.attendance_status === 'departed') throw new Error('A selected dog changed. No selected dogs moved. Review the refreshed board and select again.');
+        return a;
+      });
+      const order = lane(day(date).assignments.filter(a => !selected.includes(a)), group);
+      // All checks precede all writes, as in the server transaction.
+      selected.forEach(a => { a.group_id = group; a.version++; });
+      [...order, ...selected].forEach((a, i) => { a.sort_order = i; });
+      changed(date);
+    },
     async attendance(date, id, status, version) {
       const a = checked(date, id, version);
       if (a.attendance_status === status) return;

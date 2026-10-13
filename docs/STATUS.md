@@ -1,5 +1,15 @@
 # Implementation status
 
+## Multi-dog selection and atomic moves (13 October 2026)
+
+Based on current main `42c5e4f` in a separate checkout, preserving unrelated work. Cards toggle independently across groups/Unassigned; mobile tabs keep the selection and switch views. Blue outlines, selected count, a sticky mobile destination chooser, Clear selection and Escape are available. Date changes and successful moves clear selection. Information/arrival/grip controls preserve selection; grip drag/reorder remains single-dog. Failed/ambiguous bulk responses refresh server state and discard the selection without replay.
+
+CLI-generated additive migration `20261013041057_bulk_dog_moves.sql` adds only `move_assignments`: existing staff/workspace day locking, whole-selection source/version validation, duplicate/departed/missing rejection, attendance preservation, per-dog attributed audit and one Realtime day revision. Hosted compatibility inspection and isolated synthetic API acceptance passed atomic groups/Unassigned batches, real concurrent conflicts, invalid/stale rejection, permission denial, unique locations and unchanged attendance/master metadata. Migration is applied; existing RPCs remain compatible. Security advisors add the intentional [authenticated checked-definer RPC notice](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable); existing synthetic-pilot/private-ledger/password notices remain.
+
+Validation: 88 unit/PostgreSQL tests and all 44 Chromium tests passed, including desktop/mobile multi-selection, tabs, controls, destinations, remote stale selections, saving/offline gating and injected failed/lost responses. Edge checks, frontend type checks/build and PWA offline-shell checks passed. Desktop retains 90 fully visible group cards at 1920×1080/100%; 390px has no horizontal overflow. Screenshot evidence: `screenshots/bulk-selection-desktop.png` and `screenshots/bulk-selection-mobile.png`. Two existing sparse-date tests were updated from the former tab-as-destination interaction and pass. Existing bundle-size warning remains.
+
+Repeatable hosted API/two-browser acceptance: `tests/live-bulk-moves.mjs` with `LIVE_TEST_CONFIRM=synthetic-pilot`, optional `BULK_API_ONLY=1`, and `TEST_APP_URL` for browser checks. Creates uniquely named synthetic dogs on 2039-10-13, restores only their locations to Unassigned and retains all records/history. Preview/production publication and two-staff deployed acceptance are pending at this checkpoint. Physical-device use remains unverified.
+
 ## Sparse-date group tile fix (13 October 2026)
 
 Desktop group grids retain empty columns (`auto-fill`) instead of collapsing them (`auto-fit`). A full Monday group had 71px tiles, but a later date with one dog stretched its tile to 448px. Sparse dates now keep the same compact tile and photo dimensions. Unassigned, database, mobile styles and placement logic are unchanged.

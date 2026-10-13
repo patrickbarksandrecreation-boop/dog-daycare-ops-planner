@@ -15,6 +15,15 @@ function fixture() {
   return {repo, read: async (date:string) => repo.photos!(await repo.snapshot(date)),state,rpc,signing,single,callback:(s:string)=>callback(s),switchUser:()=>{user='staff-b';}};
 }
 afterEach(()=>{vi.useRealTimers();});
+it('sends the entire captured selection through one RPC and never falls back after failure',async()=>{
+  const f=fixture();
+  const selected=[{id:'a',version:2,group_id:'one'},{id:'b',version:1,group_id:null}];
+  await f.repo.moveMany('day',selected,'group');
+  expect(f.rpc).toHaveBeenCalledExactlyOnceWith('move_assignments',{p_day:'day',p_assignments:selected,p_group:'group'});
+  f.rpc.mockResolvedValueOnce({data:null,error:{message:'A selected dog changed. No selected dogs moved.'}});
+  await expect(f.repo.moveMany('day',selected,null)).rejects.toThrow(/No selected dogs moved/);
+  expect(f.rpc).toHaveBeenCalledTimes(2);
+});
 it('saves only colour through the version-checked staff RPC and propagates failures',async()=>{
   const f=fixture();
   await f.repo.saveColour('dog','#cfe5fa',2);

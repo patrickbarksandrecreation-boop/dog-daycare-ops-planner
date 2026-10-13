@@ -96,6 +96,7 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
     },
     add: (day, dog) => rpc('add_to_plan', { p_day: day, p_dog: dog }),
     move: (day, assignment, group, before, version) => rpc('move_assignment', { p_day: day, p_assignment: assignment, p_group: group, p_before: before, p_version: version }),
+    moveMany: (day, assignments, group) => rpc('move_assignments', { p_day: day, p_assignments: assignments, p_group: group }),
     remove: (day, assignment, version) => rpc('remove_assignment', { p_day: day, p_assignment: assignment, p_version: version }),
     attendance: (day, assignment, status, version) => rpc('set_attendance', { p_day: day, p_assignment: assignment, p_status: status, p_version: version }),
     rename: (day, group, name, useDefault) => rpc('rename_group', { p_day: day, p_group: group, p_name: name, p_default: useDefault }),

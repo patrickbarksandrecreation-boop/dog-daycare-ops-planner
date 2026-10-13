@@ -69,6 +69,15 @@ small,.muted { color:var(--muted); }
 .selection-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:26px; color:var(--muted); font-size:12px; flex-shrink:0; padding:0 2px; }
 .selection-bar small { margin-left:auto; font-size:11px; }
 .selection-bar.has-selection { color:#254e87; }
+.bulk-destination { display:flex; align-items:center; gap:8px; font-size:12px; }
+.bulk-destination select { width:auto; min-width:150px; }
+@media(max-width:760px) {
+  .selection-bar.has-selection { position:sticky; top:0; z-index:21; background:#f3f5f2; padding:6px 2px; flex-wrap:wrap; }
+  .selection-bar.has-selection > span { flex:1 0 100%; }
+  .bulk-destination { flex:1; font-size:0; }
+  .bulk-destination select { width:100%; font-size:12px; min-height:40px; }
+  .lane-layout:has(.has-selection) > .group-tabs { position:static; }
+}
 .group-board { display:grid; grid-template-columns:repeat(var(--group-count),minmax(0,1fr)); gap:14px; flex:1; min-height:0; }
 .group-wrapper { min-width:0; min-height:0; }
 .group-lane { display:flex; flex-direction:column; min-height:100%; height:100%; border:1px solid #cbdac4; border-radius:9px; background:#eef4e9; overflow:hidden; }

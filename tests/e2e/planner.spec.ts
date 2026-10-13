@@ -9,7 +9,7 @@ async function demo(page: Page, scenario='planned') {
 }
 async function move(page: Page, name: string, group: string) {
   await page.getByRole('button',{name:`Select ${name}`,exact:true}).click();
-  await page.getByRole('button',{name:`Move selected dog to ${group}`,exact:true}).click();
+  await page.getByRole('button',{name:`Move selected dogs to ${group}`,exact:true}).click();
 }
 async function drag(page: Page, name: string, target: Locator) {
   await expect(page.getByRole('button',{name:`Drag ${name}`,exact:true})).toBeEnabled();
@@ -46,7 +46,7 @@ test('selection, deselection, arrival and movement remain independent', async ({
   await select.click(); await page.keyboard.press('Escape');
   await expect(select).toHaveAttribute('aria-pressed','false');
   await select.focus(); await page.keyboard.press('Enter');
-  await page.getByRole('button',{name:'Move selected dog to Group 2',exact:true}).press('Enter');
+  await page.getByRole('button',{name:'Move selected dogs to Group 2',exact:true}).press('Enter');
   await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toBeVisible();
   await expect(page.getByTestId('present-count')).toHaveText('31');
   await page.getByRole('button',{name:'Mark Archie present',exact:true}).click();
@@ -202,7 +202,7 @@ test('390px touch supports tap moves, stationary hold and grip drag without conf
     expect((await tile.boundingBox())!.width).toBeLessThan(90);
     expect((await tile.boundingBox())!.height).toBe(70);
     await page.getByRole('button',{name:'Select Archie',exact:true}).tap();
-    await page.getByRole('button',{name:'Send selected dog to Group 2',exact:true}).tap();
+    await page.getByLabel('Move selected dogs to',{exact:true}).selectOption('group-2');
     await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toHaveCount(1);
     await page.getByRole('button',{name:'View Group 1',exact:true}).tap();
     const cdp=await context.newCDPSession(page);

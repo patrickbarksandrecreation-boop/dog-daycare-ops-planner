@@ -45,9 +45,11 @@ beforeEach(async()=>{
   day=(await q('select public.ensure_planning_day($1) id',[date]))[0].id;
   for(const dog of dogs) await q('select public.add_to_plan($1,$2)',[day,dog]);
   const s=await snapshot(); group=s.groups[0].group_id; otherGroup=s.groups[1].group_id;
-  await q("select public.set_attendance($1,$2,'present',1)",[day,s.assignments[0].id]);
-  await q('select public.move_assignment($1,$2,$3,null,2)',[day,s.assignments[0].id,group]);
-  await q('select public.move_assignment($1,$2,$3,null,1)',[day,s.assignments[1].id,otherGroup]);
+  const first=s.assignments.find((a:any)=>a.dog_id===dogs[0]);
+  const secondDog=s.assignments.find((a:any)=>a.dog_id===dogs[1]);
+  await q("select public.set_attendance($1,$2,'present',1)",[day,first.id]);
+  await q('select public.move_assignment($1,$2,$3,null,2)',[day,first.id,group]);
+  await q('select public.move_assignment($1,$2,$3,null,1)',[day,secondDog.id,otherGroup]);
 });
 afterAll(async()=>{await db?.close();});
 
@@ -75,14 +77,16 @@ it('rejects a stale member and mismatched source without moving the other member
   await expect(move(items)).rejects.toMatchObject({code:'PT409'});
   expect(await snapshot()).toEqual(before);
   expect(await q('select * from public.movement_events where planning_day_id=$1',[day])).toEqual(history);
-  const wrong=selected(before); wrong[2].group_id=group;
+  const wrong=selected(before); wrong[2].group_id=wrong[2].group_id===group?null:group;
   await expect(move(wrong)).rejects.toMatchObject({code:'PT409'});
   expect(await snapshot()).toEqual(before);
 });
 
 it('rejects departed, missing, duplicate, malformed, cross-day selections and foreign destinations atomically',async()=>{
   const s=await snapshot(), items=selected(s);
-  await q("select public.set_attendance($1,$2,'departed',$3)",[day,items[0].id,items[0].version]);
+  const present=s.assignments.find((a:any)=>a.dog_id===dogs[0]);
+  expect(present.attendance_status).toBe('present');
+  await q("select public.set_attendance($1,$2,'departed',$3)",[day,present.id,present.version]);
   const before=await snapshot();
   for(const invalid of [selected(before),[items[1],{...items[2],id:crypto.randomUUID()}],[items[1],items[1]],[],null,[{id:items[1].id,group_id:null}],[{...items[1],version:null}],[{...items[1],group_id:undefined}]]) {
     await expect(move(invalid)).rejects.toThrow(); expect(await snapshot()).toEqual(before);

@@ -32,7 +32,7 @@ for (const mobile of [false, true]) test.describe(mobile ? 'mobile sparse dates'
         await page.getByRole('button', { name: `Book ${name} for day`, exact: true }).click();
         await page.getByRole('button', { name: 'Close dialog' }).click();
         await page.getByRole('button', { name: `Select ${name}`, exact: true }).click();
-        await page.getByRole('button', { name: `${mobile ? 'Send' : 'Move'} selected dog to Group 1`, exact: true }).click();
+        await page.getByLabel('Move selected dogs to', { exact: true }).selectOption('group-1');
       }
       await checkTile();
     }

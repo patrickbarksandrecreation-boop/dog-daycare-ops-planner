@@ -55,7 +55,7 @@ test('vertical resizing sets a floor while additional dogs automatically extend 
   // Compact tiles need more bookings to exceed the resized panel floor.
   for(let i=0;i<30;i++) {
     await page.getByTestId('lane-unassigned').getByRole('button',{name:/^Select /}).first().click();
-    await page.getByRole('button',{name:'Move selected dog to Group 1',exact:true}).click();
+    await page.getByRole('button',{name:'Move selected dogs to Group 1',exact:true}).click();
   }
   const group=(await geometry(page))[1]; expect(group.height).toBeGreaterThan(initial+32); expect(group.allInside).toBe(true);
   await expect(page.getByTestId('present-count')).toHaveText('0');
@@ -69,7 +69,7 @@ test('desktop resize preferences do not affect mobile tabs and horizontal strip'
   expect(await page.getByTestId('lane-unassigned').evaluate(p=>getComputedStyle(p.querySelector('.unassigned-cards')!).gridAutoFlow)).toBe('column');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.getByRole('button',{name:'Select Archie',exact:true}).click();
-  await page.getByRole('button',{name:'Send selected dog to Group 2',exact:true}).click();
+  await page.getByLabel('Move selected dogs to',{exact:true}).selectOption('group-2');
   await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toBeVisible();
 });
 

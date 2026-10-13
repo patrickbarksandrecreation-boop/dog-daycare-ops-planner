@@ -19,7 +19,7 @@ export function GroupLane({ id, name, present, planned, order, selected, draggin
       if (selected && !(event.target as HTMLElement).closest('button,input,select,form,article')) destination();
     }}>
     <header className="group-heading">
-      <button className="group-destination" aria-label={`Move selected dog to ${name}`} disabled={!selected} onClick={destination}>
+      <button className="group-destination" aria-label={`Move selected dogs to ${name}`} disabled={!selected} onClick={destination}>
         <h2>{name}</h2><span className="group-counts" data-testid={`counts-${id}`}><b>{present}</b> present <i>/</i> <b>{planned}</b> planned</span>
       </button>
       {rename && <button className="icon-button" onClick={rename} aria-label={`Rename ${name}`}><Pencil size={15}/></button>}
@@ -31,7 +31,7 @@ export function GroupLane({ id, name, present, planned, order, selected, draggin
     {editor}
     <div className="group-grid">{children}</div>
     {planned === 0 && <button className="empty-group" disabled={!selected} onClick={destination}>
-      {selected ? 'Move selected dog here' : 'Drop dogs here, or select a dog then this group'}
+      {selected ? 'Move selected dogs here' : 'Drop dogs here, or select a dog then this group'}
     </button>}
   </section>;
 }

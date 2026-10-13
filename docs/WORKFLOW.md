@@ -13,8 +13,9 @@ For this iteration bookings are entered manually through **Dog database → Book
 - At the start of planning, every dog booked for that day appears in Unassigned as Expected.
 - Assigning a dog removes it from Unassigned and places it in exactly one group, even before arrival.
 - Unassigned search searches only active, unassigned dogs on the selected date. Database search is separate and cannot add a second daily record, including for a dog that has already departed.
-- Drag a grip, or select a card then select a destination. Groups and Unassigned both accept active dogs. Moving never changes attendance.
-- Tap a selected card again, press Escape or use Cancel selection to deselect. Interactive controls inside a card do not select/move it.
+- Drag a grip to move one dog, or toggle multiple cards and choose a destination. Selection spans groups and Unassigned, survives mobile view-tab changes and shows a count and tile outlines. Groups and Unassigned accept the entire active selection in one atomic operation. Moving never changes attendance.
+- Tap a selected card again to deselect only that dog; Escape or Clear selection deselects all. Date changes and successful moves clear selection. Information, arrival and drag controls do not toggle selection. Mobile tabs always switch views; the sticky destination chooser moves selected dogs.
+- Bulk movement captures each selected assignment's version and location. The staff-authorised transaction validates every member before any write; stale, departed, missing or invalid selections move none. Explain the conflict and refresh. Failed/ambiguous responses reconcile confirmed server state and discard the selection without replaying writes. Offline/saving disables editing.
 - A stationary touch hold opens information; moving/scrolling cancels the hold. A separate grip starts drag, so dragging cannot trigger the information hold.
 - Right-click, double-click or the information button opens the same details on desktop. Keyboard users have select, destination, information and grip controls.
 

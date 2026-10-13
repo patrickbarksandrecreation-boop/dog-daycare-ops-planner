@@ -47,6 +47,14 @@ const db = {
     }
     control.writes++; await pause(150);
     if (control.failWrite) return { error: { message: 'Another staff member changed this record' } };
+    if (name === 'move_assignments') {
+      const rows = args.p_assignments.map((s: any) => control.state.assignments.find(a => a.id === s.id));
+      if (rows.some((a: any, i: number) => !a || a.version !== args.p_assignments[i].version || a.group_id !== args.p_assignments[i].group_id || a.attendance_status === 'departed')) {
+        return { error: { message: 'A selected dog changed. No selected dogs moved. Review the refreshed board and select again.' } };
+      }
+      rows.forEach((a: any) => { a.group_id = args.p_group; a.version++; });
+      control.state.day.revision++;
+    }
     if (name === 'set_attendance') {
       const a = control.state.assignments.find(a => a.id === args.p_assignment)!;
       if (a.version !== args.p_version) return { error: { message: 'Another staff member changed this record' } };

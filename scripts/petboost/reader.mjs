@@ -84,7 +84,7 @@ async function collectPetboost(page, businessButton) {
   await page.getByRole('button',{name:businessButton,exact:true}).waitFor({timeout:10000});
   const before=await readCalendar(page), fingerprint=validateCalendar(before);
   const details=new Map();
-  for(const event of before.events.filter(e=>/^Daycare\s*\|/.test(e.service))) {
+  for(const event of before.events.filter(e=>/^Daycare\s*\|/.test(e.service) && !['Cancelled','Canceled','No Show'].includes(e.status))) {
     if(details.has(event.bookingId)) continue;
     await page.goto(`https://business.petboost.com/appointments/${event.bookingId}`);
     const heading=page.getByRole('heading',{level:1,name:/Appointment$/});

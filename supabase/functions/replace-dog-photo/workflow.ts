@@ -1,4 +1,4 @@
-export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+export const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 export function imageExtension(bytes: Uint8Array, type: string): string {
   const starts = (...prefix: number[]) => prefix.every((v, i) => bytes[i] === v);
   if (type === 'image/jpeg' && starts(255, 216, 255)) return 'jpg';
@@ -14,7 +14,7 @@ export interface PhotoOperations {
   cleanup(): Promise<void>;
 }
 export async function replacePhoto(bytes: Uint8Array, type: string, ops: PhotoOperations) {
-  if (!bytes.length || bytes.length > MAX_PHOTO_BYTES) throw new Error('Photos must be between 1 byte and 5 MB.');
+  if (!bytes.length || bytes.length > MAX_PHOTO_BYTES) throw new Error('Photos must be between 1 byte and 8 MB.');
   const extension = imageExtension(bytes, type);
   const path = await ops.reserve(extension);
   try {

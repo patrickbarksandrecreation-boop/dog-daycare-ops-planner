@@ -1,4 +1,5 @@
 import { expect, it, vi } from 'vitest';
+import { photoError } from '../src/model';
 import { imageExtension, replacePhoto, MAX_PHOTO_BYTES } from '../supabase/functions/replace-dog-photo/workflow';
 const png = new Uint8Array([137,80,78,71,13,10,26,10]);
 function fixture() {
@@ -32,7 +33,17 @@ it('rejects mismatched signatures, unsupported MIME types, empty and oversize up
   const {ops}=fixture();
   expect(()=>imageExtension(png,'image/jpeg')).toThrow('valid');
   expect(()=>imageExtension(png,'image/svg+xml')).toThrow('valid');
-  await expect(replacePhoto(new Uint8Array(),'image/png',ops)).rejects.toThrow('5 MB');
-  await expect(replacePhoto(new Uint8Array(MAX_PHOTO_BYTES+1),'image/png',ops)).rejects.toThrow('5 MB');
+  await expect(replacePhoto(new Uint8Array(),'image/png',ops)).rejects.toThrow('8 MB');
+  await expect(replacePhoto(new Uint8Array(MAX_PHOTO_BYTES+1),'image/png',ops)).rejects.toThrow('8 MB');
   expect(ops.reserve).not.toHaveBeenCalled();
+});
+
+it.each([5 * 1024 * 1024 + 1, 8 * 1024 * 1024])('accepts a %i-byte photo in both client and replacement validation', async size => {
+  const bytes = new Uint8Array(size); bytes.set(png);
+  expect(photoError(new File([bytes], 'dog.png', { type: 'image/png' }))).toBeNull();
+  const { ops } = fixture();
+  await expect(replacePhoto(bytes, 'image/png', ops)).resolves.toEqual({ saved: true, cleanupPending: false });
+});
+it('rejects photos above 8 MB in the client', () => {
+  expect(photoError(new File([new Uint8Array(8 * 1024 * 1024 + 1)], 'dog.png', { type: 'image/png' }))).toBe('Photos must be 8 MB or smaller.');
 });

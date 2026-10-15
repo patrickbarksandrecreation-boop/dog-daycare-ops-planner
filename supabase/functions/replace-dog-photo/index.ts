@@ -40,7 +40,7 @@ Deno.serve(async request => {
     while (true) {
       const { value, done } = await reader.read(); if (done) break;
       length += value.length;
-      if (length > MAX_PHOTO_BYTES + 65536) { await reader.cancel(); return json({ error: 'Photo exceeds 5 MB' }, 413); }
+      if (length > MAX_PHOTO_BYTES + 65536) { await reader.cancel(); return json({ error: 'Photo exceeds 8 MB' }, 413); }
       chunks.push(value);
     }
     const body = new Uint8Array(length); let offset = 0;

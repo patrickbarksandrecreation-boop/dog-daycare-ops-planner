@@ -1,5 +1,11 @@
 # Implementation status
 
+## Photo upload limit (16 October 2026 AEST)
+
+Owner requested an immediate increase from 5 MB to 8 MB. Creation/replacement client validation, both upload hints, Edge validation and bounded multipart handling now accept up to 8,388,608 bytes. Additive `dog_photo_limit_8mb` migration updates only the private bucket cap; MIME restrictions and access controls are unchanged. Hosted bucket verified at 8,388,608 bytes; JWT-verified replacement function version 2 is active. Compression remains deferred.
+
+Validation: 91 unit/PostgreSQL/workflow tests, Edge type checking and production build passed, including client/Edge acceptance above the former cap and exactly at 8 MB, and oversize rejection. Frontend publication and hosted upload acceptance are verified separately after this commit. Physical-phone camera capture remains unverified.
+
 ## Multi-dog selection and atomic moves (13 October 2026)
 
 Based on current main `42c5e4f` in a separate checkout, preserving unrelated work. Cards toggle independently across groups/Unassigned; mobile tabs keep the selection and switch views. Blue outlines, selected count, a sticky mobile destination chooser, Clear selection and Escape are available. Date changes and successful moves clear selection. Information/arrival/grip controls preserve selection; grip drag/reorder remains single-dog. Failed/ambiguous bulk responses refresh server state and discard the selection without replay.

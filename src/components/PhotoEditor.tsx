@@ -16,7 +16,7 @@ export function PhotoEditor({ dog, editable, save, close }: {
         const file = event.target.files?.[0]; const message = file ? photoError(file) : '';
         setError(message || ''); setPhoto(message ? undefined : file);
       }}/></label>
-      <p className="muted">JPG, PNG or WebP · up to 5 MB. The current photo stays until the replacement is saved.</p>
+      <p className="muted">JPG, PNG or WebP · up to 8 MB. The current photo stays until the replacement is saved.</p>
       {error && <p className="error" role="alert">{error}</p>}
       <footer><button type="button" onClick={close}>Cancel</button><button className="primary" disabled={!editable || !photo || !!error}>Save photo</button></footer>
     </form>

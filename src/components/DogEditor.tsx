@@ -32,7 +32,7 @@ export function DogEditor({ dog, dogs, save, close, editable }: {
         const file = e.target.files?.[0]; const message = file ? photoError(file) : null;
         setError(message || ''); setPhoto(message ? undefined : file);
       }}/></label>
-      <small>JPG, PNG or WebP · up to 5 MB.</small></>}
+      <small>JPG, PNG or WebP · up to 8 MB.</small></>}
       {dog.id && <p className="muted">Use Change photo in dog information to replace the photograph.</p>}
       {dog.id && <label className="check-label"><input type="checkbox" checked={archived} onChange={e => setArchived(e.target.checked)}/>Archive this dog</label>}
       <p className="muted">{dog.id ? 'Saved plans and attendance records are retained.' : 'Creates a database record. Book this dog for a date separately.'}</p>

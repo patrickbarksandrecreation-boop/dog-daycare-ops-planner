@@ -62,7 +62,7 @@ export const groupCounts = (items: Assignment[], group: string | null) => {
 export function photoError(file: File): string | null {
   if (file.size === 0) return 'Choose an image that is not empty.';
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return 'Choose a JPG, PNG or WebP image.';
-  return file.size > 5 * 1024 * 1024 ? 'Photos must be smaller than 5 MB.' : null;
+  return file.size > 8 * 1024 * 1024 ? 'Photos must be 8 MB or smaller.' : null;
 }
 export const sameName = (a: string, b: string) =>
   a.trim().replace(/\s+/g, ' ').toLocaleLowerCase() === b.trim().replace(/\s+/g, ' ').toLocaleLowerCase();

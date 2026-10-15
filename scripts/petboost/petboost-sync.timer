@@ -1,0 +1,11 @@
+[Unit]
+Description=Check Petboost manual queue and Brisbane sync slots
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=1s
+RandomizedDelaySec=0
+Unit=petboost-sync.service
+
+[Install]
+WantedBy=timers.target

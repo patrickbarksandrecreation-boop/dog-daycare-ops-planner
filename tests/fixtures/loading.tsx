@@ -32,10 +32,11 @@ new MutationObserver(() => {
 }).observe(document.getElementById('root')!, { subtree: true, childList: true, characterData: true });
 const db = {
   auth: { getSession: async () => ({ data: { session: { user: { id: 'staff' } } } }) },
-  from: () => ({ select: () => ({ eq: () => ({ single: async () => {
+  from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }), single: async () => {
     await pause(100); return { data: { id: 'staff', display_name: 'Test staff', role: 'staff', workspace_id: 'workspace' } };
   } }) }) }),
   rpc: async (name: string, args: any) => {
+    if (name === 'current_workspace') return { data: 'workspace' };
     event(name);
     if (name === 'ensure_planning_day') { await pause(100); return { data: null }; }
     if (name === 'planning_snapshot') {

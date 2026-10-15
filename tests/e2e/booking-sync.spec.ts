@@ -1,0 +1,20 @@
+import {test,expect} from '@playwright/test';
+test('manual request is queued once, success refreshes the board and errors/cancellations remain visible',async({page})=>{
+  await page.clock.install();
+  await page.goto('/tests/fixtures/booking-sync.html');
+  const button=page.getByRole('button',{name:'Sync bookings',exact:true});
+  await expect(button).toBeEnabled(); await button.click(); await expect(button).toBeDisabled();
+  expect(await page.evaluate(()=>(window as any).control.requests)).toBe(1);
+  await expect(page.getByText('Sync requested; waiting for worker…')).toBeVisible();
+  await page.evaluate(()=>{const c=(window as any).control;c.sync.last_success_at=new Date().toISOString();c.sync.claimed_request_at=c.sync.requested_at;});
+  await page.clock.runFor(20001); await expect(button).toBeEnabled();
+  expect(await page.evaluate(()=>(window as any).control.refreshes)).toBe(1);
+  await page.evaluate(()=>{const c=(window as any).control;c.sync.last_error_code='login_required';c.sync.missingDogIds=['synthetic'];c.sync.heartbeat_at=null;});
+  await page.clock.runFor(20001);
+  await expect(page.getByText('Petboost login needs renewing on the sync worker.')).toBeVisible();
+  await expect(page.getByText(/Cancelled or no longer in Petboost/)).toContainText('Synthetic Dog');
+  await expect(page.getByText(/worker is not checking in/)).toBeVisible();
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  await page.screenshot({path:'docs/screenshots/petboost-sync-mobile.png'});
+});

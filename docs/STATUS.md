@@ -1,5 +1,13 @@
 # Implementation status
 
+## Petboost booking sync (draft; 16 October 2026 Brisbane)
+
+Adds a read-only persistent-browser reader, an atomic service-only importer, manual Sync bookings queue/status panel and disabled Linux worker/timer examples. Stable appointment + pet IDs handle multi-dog appointments; repeated imports preserve allocations, attendance, notes/profile metadata and manual removals. Missing bookings are retained and flagged for review. Completeness/date/freshness checks, worker leases and identity review fail closed. No credentials or session material are committed.
+
+Cloud-browser Petboost sign-in and calendar/detail access verified, including distinct dog IDs in one booking and count reconciliation. A supported API/unattended export was not verified; staff menus lack integration/reporting access. This is not proof of worker-host access. Hosted read-only inspection confirms the only workspace is still the openly enrollable Synthetic pilot and sync is not installed. Imports into open-enrollment workspaces are explicitly rejected.
+
+Validation: 104 unit/PostgreSQL tests, frontend build and Edge checks passed. Local browser/PWA execution is blocked: Chromium download returned invalid archives and no browser executable is available. Browser acceptance tests are added but unverified locally; no screenshot or physical-device acceptance claim. No production schema changes, merge, timer installation, live import or paid hosting activation. Before activation: choose a persistent worker host, sign in and pass headless read-only verification on that host, establish controlled workplace admission, apply/review the additive migration against the cloud ledger, then verify hosted synthetic/manual/timed acceptance. See [PETBOOST-SYNC.md](PETBOOST-SYNC.md).
+
 ## Photo upload limit (16 October 2026 AEST)
 
 Owner requested an immediate increase from 5 MB to 8 MB. Creation/replacement client validation, both upload hints, Edge validation and bounded multipart handling now accept up to 8,388,608 bytes. Additive `dog_photo_limit_8mb` migration updates only the private bucket cap; MIME restrictions and access controls are unchanged. Hosted bucket verified at 8,388,608 bytes; JWT-verified replacement function version 2 is active. Compression remains deferred.

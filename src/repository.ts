@@ -1,8 +1,17 @@
 import type { Attendance, Connection, Dog, Profile, Snapshot, Run } from './model';
 import type { InteractionRule } from './behaviour';
 import type { SelectedAssignment } from './selection';
+export type BookingSync = {
+  enabled: boolean; last_success_at: string | null; last_success_date: string | null;
+  last_error_code: string | null; heartbeat_at: string | null;
+  requested_at: string | null; claimed_request_at: string | null;
+  lease_until: string | null; last_attempt_at: string | null;
+  missingDogIds: string[];
+};
 export interface Repository {
   demo: boolean;
+  bookingSync?(date: string): Promise<BookingSync | null>;
+  requestBookingSync?(): Promise<void>;
   profile(): Promise<Profile>;
   snapshot(date: string): Promise<Snapshot>;
   // Optional presentation enrichment; never blocks authoritative board reads/writes.

@@ -6,9 +6,9 @@ This is the preferred deployment alternative to the persistent Linux worker. Net
 
 The signed-in cloud browser established that the page route, calendar counts and pet IDs are accessible. That session cannot be silently transferred to Netlify. A separate secure session-seeding step and a successful **read-only verification executed on Netlify itself** are required. An account can expire or Petboost can reject the hosting environment; these remain live acceptance checks, not assumptions.
 
-The current app is a synthetic, openly enrollable workspace. The importer rejects that workspace. Controlled workplace admission and the relevant review remain prerequisites to real imports. No access controls were weakened, production migration applied or schedule activated during this preparation.
+The current app has an openly enrollable pilot workspace. The importer rejects that workspace. Controlled workplace admission and the relevant review remain prerequisites to real imports. No access controls were weakened or imports activated; the approved additive migrations are installed.
 
-Recovery inspection on 16 October confirmed signed-in access to the existing Netlify project and its Personal plan. Only the public Supabase frontend settings are configured; no worker settings or sync migrations are installed. Session seeding, hosted Chromium and live read verification remain outstanding. A successful local function bundle does not establish a successful hosted login.
+Approved disabled deployment: PR #12 was merged and production published all five functions on 16 October. Both sync migrations and disabled Netlify-mode configuration are installed. All production-context server settings were saved by 17 October; a rebuild applies the final key. Session seeding and hosted live-read verification are still pending. The existing Personal plan is unchanged. A successful function bundle does not establish a successful hosted login.
 
 ## Runtime and storage
 
@@ -31,6 +31,12 @@ Recovery inspection on 16 October confirmed signed-in access to the existing Net
 6. Perform hosted synthetic acceptance in an appropriately restricted test workspace and check staff UI status/error delivery. Then enable that workplace's DB config and set `PETBOOST_SYNC_ENABLED=true` in Netlify's production environment; redeploy to apply the environment change. Verify one manual sync and the next scheduled run, including independent staff refresh, cancellation review and unchanged assignments/attendance. The database independently requires the Netlify verification stamp and rejects open enrollment.
 
 At renewal, repeat steps 4–5. No API investigation is required from the user. A sign-in ceremony cannot be eliminated safely when Petboost requires renewed authentication; its frequency is not yet known. Keep the setup environment on a trusted encrypted device or remove it securely when no longer needed. Do not send its contents through chat.
+
+On Windows, if the bundled headed Chromium cannot launch, set `PETBOOST_SETUP_BROWSER=msedge` or `chrome` to use that installed browser for the desktop helper. This does not change the Netlify browser. The local setup file must also have a restrictive Windows ACL; POSIX mode alone does not establish Windows file permissions.
+
+For supervised troubleshooting, `PETBOOST_SETUP_RETRY=true` keeps the login in memory after a failed read and waits up to fifteen minutes for Enter to retry or `q` to close. Each retry reloads the local reader. Upload errors do not retry automatically. Only a complete original and restored-session read permits encrypted upload.
+
+The owner confirmed there is no daycare attendance on Saturday or Sunday. The six automatic sync slots remain Monday–Friday only. A weekend read can verify login restoration and the explicit empty calendar, but does not establish populated weekday reconciliation. The reader explicitly selects Today if a previous date was restored, accepts only an explicit empty-day message or a reconciled Show All count, and verifies the business in either sidebar layout.
 
 ## Costs and availability
 

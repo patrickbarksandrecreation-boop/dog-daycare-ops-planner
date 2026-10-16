@@ -44,23 +44,40 @@ async function checkLogin(page) {
   if(new URL(page.url()).hostname!=='business.petboost.com') throw new SyncError('login_required');
   if(await page.getByRole('heading',{name:'Login to Petboost Business',exact:true}).count()) throw new SyncError('login_required');
 }
-export async function readCalendar(page) {
-  await page.goto('https://business.petboost.com/appointments');
+export async function readCalendar(page,onStep=()=>{}) {
+  onStep('calendar date');
+  await page.goto('https://business.petboost.com/appointments',{waitUntil:'domcontentloaded',timeout:30000});
+  // Petboost can restore a date selected during the interactive sign-in.
+  const dateField=page.getByRole('textbox',{name:/^[A-Z][a-z]{2}, \d{1,2} [A-Z][a-z]{2} \d{4}$/});
+  await dateField.waitFor({timeout:30000}).catch(async()=>{
+    await checkLogin(page); throw new SyncError('incomplete_fetch');
+  });
+  const today=page.getByRole('button',{name:'Today',exact:true});
+  if(await today.isVisible()) await today.click();
   await page.getByRole('heading',{name:"Today's Appointments",exact:true}).waitFor({timeout:30000}).catch(async()=>{
     await checkLogin(page); throw new SyncError('incomplete_fetch');
   });
   await checkLogin(page);
+  onStep('calendar total');
   const all=page.getByRole('button',{name:/^Show All \d+$/});
-  await all.waitFor({timeout:30000});
-  await all.click();
-  const expectedCount=Number((await all.innerText()).match(/\d+/)?.[0]);
+  const empty=page.getByText('No appointments this day',{exact:true});
+  await all.or(empty).first().waitFor({timeout:30000});
+  let expectedCount;
+  if(await all.isVisible()) {
+    await all.click();
+    expectedCount=Number((await all.innerText()).match(/\d+/)?.[0]);
+  } else {
+    // Missing cards alone never establish an empty day.
+    if(!await empty.isVisible()) throw new SyncError('incomplete_fetch');
+    expectedCount=0;
+  }
   // Read DOM-only attributes observed in the real calendar. Unknown markup fails closed.
   const raw=await page.locator('[role="button"][data-id^="Appointment_"]').evaluateAll(els=>els.map(e=>({
     label:e.getAttribute('aria-label'),bookingId:e.getAttribute('data-id')?.replace('Appointment_',''),fullName:e.querySelector('h3')?.textContent,
     status:Array.from(e.querySelectorAll('span')).map(n=>n.textContent?.trim())
       .find(t=>['Confirmed','In Progress','Completed','Cancelled','Canceled','No Show','Scheduled','Ready to Pay'].includes(t)),
   })));
-  const dateField=page.getByRole('textbox',{name:/^[A-Z][a-z]{2}, \d{1,2} [A-Z][a-z]{2} \d{4}$/});
+  onStep('calendar validation');
   const dateLabel=await dateField.inputValue();
   const date=brisbaneDate(new Date(`${dateLabel} 12:00:00 GMT+1000`));
   const events=raw.map(row=>{
@@ -74,19 +91,25 @@ export async function readCalendar(page) {
   });
   const calendar={date,expectedCount,events}; validateCalendar(calendar); return calendar;
 }
-async function collectPetboost(page, businessButton) {
-  await page.goto('https://business.petboost.com/me');
-  await page.getByRole('button',{name:'Open menu',exact:true}).waitFor({timeout:30000}).catch(async()=>{
+async function collectPetboost(page, businessButton,onStep) {
+  onStep('account navigation');
+  await page.goto('https://business.petboost.com/me',{waitUntil:'domcontentloaded',timeout:30000});
+  onStep('account menu');
+  const menu=page.getByRole('button',{name:'Open menu',exact:true});
+  const business=page.getByRole('button',{name:businessButton,exact:true});
+  await menu.or(business).first().waitFor({timeout:30000}).catch(async()=>{
     await checkLogin(page); throw new SyncError('incomplete_fetch');
   });
   await checkLogin(page);
-  await page.getByRole('button',{name:'Open menu',exact:true}).click();
-  await page.getByRole('button',{name:businessButton,exact:true}).waitFor({timeout:10000});
-  const before=await readCalendar(page), fingerprint=validateCalendar(before);
+  if(!await business.isVisible()) await menu.click();
+  onStep('business identity');
+  await business.waitFor({timeout:10000});
+  const before=await readCalendar(page,onStep), fingerprint=validateCalendar(before);
   const details=new Map();
   for(const event of before.events.filter(e=>/^Daycare\s*\|/.test(e.service) && !['Cancelled','Canceled','No Show'].includes(e.status))) {
     if(details.has(event.bookingId)) continue;
-    await page.goto(`https://business.petboost.com/appointments/${event.bookingId}`);
+    onStep('appointment details');
+    await page.goto(`https://business.petboost.com/appointments/${event.bookingId}`,{waitUntil:'domcontentloaded',timeout:30000});
     const heading=page.getByRole('heading',{level:1,name:/Appointment$/});
     await heading.waitFor({timeout:15000}).catch(async()=>{await checkLogin(page);throw new SyncError('incomplete_fetch');});
     const pets=await heading.getByRole('link').evaluateAll(els=>els.map(e=>({name:e.textContent?.trim(),href:e.getAttribute('href')})));
@@ -94,11 +117,11 @@ async function collectPetboost(page, businessButton) {
     details.set(event.bookingId,pets.map(p=>({name:p.name,petId:p.href.split('/')[2].split('?')[0]})));
   }
   // A booking added/removed/changed while collecting invalidates the whole read.
-  const after=await readCalendar(page);
+  const after=await readCalendar(page,onStep);
   if(validateCalendar(after)!==fingerprint) throw new SyncError('incomplete_fetch');
   return normalizeSnapshot(after,details);
 }
-export async function readPetboost(page,businessButton) {
-  try { return await collectPetboost(page,businessButton); }
+export async function readPetboost(page,businessButton,{onStep=()=>{}}={}) {
+  try { return await collectPetboost(page,businessButton,onStep); }
   catch(error) { await checkLogin(page); throw error instanceof SyncError ? error : new SyncError('incomplete_fetch'); }
 }

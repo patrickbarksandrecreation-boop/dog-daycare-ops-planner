@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Dog, Profile, Snapshot } from './model';
 import { photoError } from './model';
-import type { Repository } from './repository';
+import type { Repository, BookingSync } from './repository';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export const client = url && key && !url.includes('YOUR_PROJECT') ? createClient(url, key, {
@@ -28,6 +28,27 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
   }
   return {
     demo: false,
+    async bookingSync(date) {
+      const workspace = await rpc<string>('current_workspace');
+      const { data: sync, error } = await db.from('petboost_sync').select('*').eq('workspace_id', workspace).maybeSingle();
+      if (error) throw new Error('Petboost sync is unavailable. Its database migration may be required.');
+      if (!sync) return null;
+      const { data: bookings, error: bookingError } = await db.from('petboost_bookings')
+        .select('dog_id,active').eq('workspace_id', workspace).eq('local_date', date);
+      if (bookingError) throw new Error('Petboost booking warnings could not be loaded.');
+      const active = new Set((bookings || []).filter(b => b.active).map(b => b.dog_id));
+      return { ...sync, missingDogIds: [...new Set((bookings || []).filter(b => !b.active && !active.has(b.dog_id)).map(b => b.dog_id))] } as BookingSync;
+    },
+    async requestBookingSync() {
+      await rpc('request_petboost_sync');
+      if (import.meta.env.VITE_PETBOOST_NETLIFY !== 'true') return;
+      const { data: { session } } = await db.auth.getSession();
+      if (!session?.access_token) throw new Error('Sign in again to start booking sync.');
+      const response = await fetch('/.netlify/functions/petboost-kick', {
+        method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error('Sync could not start. Your request is queued; check the worker status.');
+    },
     async profile() {
       // The session ID selects a row; RLS and every planner RPC still verify access on the server.
       const user = await sessionUser();

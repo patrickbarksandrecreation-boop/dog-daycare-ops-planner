@@ -1,5 +1,21 @@
 # Implementation status
 
+## Netlify Petboost recovery (draft; 16 October 2026 Brisbane)
+
+Recovered the uncommitted Netlify extension from the interrupted implementation chat into PR #12. It adds five functions for the six weekday Brisbane slots, authenticated manual dispatch, encrypted session storage/refresh and read-only hosted verification. Publication guards and disabled-by-default configuration prevent preview imports. Session renewal now fences old workers, verification shares the worker lease, and the verification helper waits for its own run ID so an older failure cannot abort a new check.
+
+Recovery validation: the original 110 unit/PostgreSQL tests, build and Edge checks passed locally. After the renewal fix, all 17 focused database/runtime tests passed, and the booking-sync Chromium test passed on Windows. CI checks the Linux serverless Chromium executable, function bundles, full browser suite and PWA. Hosted authenticated execution remains unverified.
+
+Read-only hosting inspection confirmed Netlify sign-in works, the existing Personal plan is in place and only the two public Supabase frontend settings are configured. Neither sync migration is applied. The only hosted workspace still has open anonymous enrollment, which the importer rejects. No production deployment, settings, admission changes or real imports were performed. Next: review the completed PR checks; authorize the disabled production deployment and additive migrations/server settings; then seed a Petboost session and verify it on Netlify. Live activation additionally requires an approved workplace admission arrangement.
+
+## Petboost booking sync (draft; 16 October 2026 Brisbane)
+
+Adds a read-only persistent-browser reader, an atomic service-only importer, manual Sync bookings queue/status panel and disabled Linux worker/timer examples. Stable appointment + pet IDs handle multi-dog appointments; repeated imports preserve allocations, attendance, notes/profile metadata and manual removals. Missing bookings are retained and flagged for review. Completeness/date/freshness checks, worker leases and identity review fail closed. No credentials or session material are committed.
+
+Cloud-browser Petboost sign-in and calendar/detail access verified, including distinct dog IDs in one booking and count reconciliation. A supported API/unattended export was not verified; staff menus lack integration/reporting access. This is not proof of worker-host access. Hosted read-only inspection confirms the only workspace is still the openly enrollable Synthetic pilot and sync is not installed. Imports into open-enrollment workspaces are explicitly rejected.
+
+Validation: 104 unit/PostgreSQL tests, frontend build and Edge checks passed. Local browser/PWA execution is blocked: Chromium download returned invalid archives and no browser executable is available. GitHub CI passed the browser suite and PWA checks on implementation commit `df13b35`: https://github.com/patrickbarksandrecreation-boop/dog-daycare-ops-planner/actions/runs/38822524778. No physical-device or unattended-worker acceptance claim. No production schema changes, merge, timer installation, live import or paid hosting activation. Before activation: choose a persistent worker host, sign in and pass headless read-only verification on that host, establish controlled workplace admission, apply/review the additive migration against the cloud ledger, then verify hosted synthetic/manual/timed acceptance. See [PETBOOST-SYNC.md](PETBOOST-SYNC.md).
+
 ## Photo upload limit (16 October 2026 AEST)
 
 Owner requested an immediate increase from 5 MB to 8 MB. Creation/replacement client validation, both upload hints, Edge validation and bounded multipart handling now accept up to 8,388,608 bytes. Additive `dog_photo_limit_8mb` migration updates only the private bucket cap; MIME restrictions and access controls are unchanged. Hosted bucket verified at 8,388,608 bytes; JWT-verified replacement function version 2 is active. Compression remains deferred.

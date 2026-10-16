@@ -1,0 +1,19 @@
+[Unit]
+Description=Read-only Petboost booking sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=petboost-sync
+WorkingDirectory=/opt/dog-daycare-ops-planner
+EnvironmentFile=/etc/petboost-sync.env
+ExecStart=/usr/bin/node scripts/petboost/worker.mjs tick
+TimeoutStartSec=470
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/petboost-sync
+

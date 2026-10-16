@@ -1,0 +1,53 @@
+# Petboost booking sync
+
+The API-free Netlify alternative is documented in [PETBOOST-NETLIFY.md](PETBOOST-NETLIFY.md). It restores an encrypted session for each run and does not require the persistent Linux host described below.
+
+## Verified access and release status
+
+16 October 2026 Brisbane: signed in to the separate ChatGPT cloud browser and read the business calendar. The calendar exposed stable 24-character appointment IDs, distinct stable pet profile links (including two dogs sharing one appointment ID), service names, Brisbane dates and statuses. Its Show All count matched 58 rendered rows. A course row and Ready to Pay status were observed and handled. No Petboost booking, attendance or payment was modified. This verifies the UI route and selectors, **not access from a hosted worker**.
+
+No supported public booking API or unattended export feed was verified. The staff account menu exposed no reporting/export/integration settings. Official documentation describes an appointment CSV export through Reporting & Intelligence → Appointments Deep Dive, and tells users to contact the team for recurring/unusual exports:
+
+- https://academy.petboost.com/guides/appointments/faq/
+- https://academy.petboost.com/guides/customers-and-pets/faq/
+
+The browser fallback uses the rendered UI, not guessed private API endpoints. It is sensitive to Petboost UI changes and intentionally stops on unfamiliar markup, counts, identities or statuses. A supported vendor integration should replace the reader when one is supplied.
+
+**Not activated or deployed.** The worker's own persistent session, host, production migration and workplace admission controls remain dependencies. The current anonymous, openly enrollable synthetic workspace must not receive real workplace records; see ANONYMOUS-PILOT.md. This implementation does not change that access model or import live data into it.
+
+## Components and invariants
+
+- `scripts/petboost/reader.mjs`: verifies the configured business button, reads today's full calendar and pet links, filters exact `Daycare | …` services, then reads the calendar again. Counts and fingerprints must match; every needed pet ID must resolve. A failed or changing fetch never becomes an empty list. An explicit matching zero count is required for an empty snapshot. No arrival changes are inferred from Petboost statuses.
+- The additive migration creates workspace-scoped status and source-booking tables with RLS and explicit read-only staff grants. Service-only RPCs claim an eight-minute lease, atomically reconcile a fresh snapshot for the current Brisbane date, or record a fixed error code. Imports lock the same planning-day row as staff writes. Old/duplicate workers are fenced by run ID. No raw errors or session data enter status tables.
+- Stable Petboost dog IDs use the existing `(workspace_id, source_system, source_pet_id)` unique index. Source booking identity is `(workspace, date, booking_id, pet_id)` because an appointment can contain multiple dogs. The existing daily dog uniqueness constraint prevents duplicate daily records.
+- Existing names, breeds, photos, notes, markers, group assignments, arrival/departure state and timestamps are never updated by an import. New dogs start Expected and Unassigned. A retained source ledger prevents repeat syncs from undoing staff removal or clearing. The next date is independent.
+- Disappeared/cancelled/no-show bookings are flagged as absent from the latest list. The UI explicitly asks staff to review Petboost: absence alone does not prove cancellation. No assignment is deleted, including Expected dogs. Another active booking for that dog suppresses the warning. Rebooking clears it.
+- If an unlinked dog with the same first name exists, the whole import stops for identity review. Never auto-match by name. An administrator must inspect Petboost and set the correct existing dog's `source_system='petboost'` and `source_pet_id`, scoped to its workspace. If these are genuinely different dogs, explicitly create/link the new source dog instead. Archived dogs also require review. No automatic unarchiving.
+- The frontend shows last success in Brisbane time, renewal/errors, queued/running/stalled requests, worker heartbeat and cancellation-review names. Sync bookings only requests a current-day job; it sends no source credentials. The worker polls once a minute. Other staff devices poll status every 20 seconds and refresh the board after a new success.
+
+## Worker setup — must verify before installing the timer
+
+The Netlify site remains the frontend and Supabase remains the shared database. The reader runs separately on a Linux host with Node 24, Chromium dependencies and persistent private disk. This checkout and ChatGPT's cloud browser are **not** such a host. Neither the user's phone login nor ChatGPT's browser session is copied to it.
+
+1. Use a controlled workplace workspace and disable open enrollment before real imports. Review and apply the additive migration using the project's actual cloud ledger (local/cloud versions differ). Do not replay all local migrations blindly. Run security advisors and hosted synthetic acceptance before live data.
+2. Provision the worker host yourself or select a hosting service. No hosting subscription has been created. Install the repository's locked dependencies and `pnpm exec playwright install --with-deps chromium` on that host. The existing Playwright dependency is reused.
+3. Use a dedicated OS user with a private persistent directory, such as `/var/lib/petboost-sync/profile` (0700). Keep the Node/Supabase environment in `/etc/petboost-sync.env` (0600, readable by the service user). Set `PETBOOST_PROFILE_DIR`, `PETBOOST_BUSINESS_BUTTON` to the exact business-switcher accessible name (the verified account showed `Barkley Park Enterprise`), `PETBOOST_WORKSPACE_ID`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY`. The last value is server-only. Never use a VITE_ variable. Load these through the service's EnvironmentFile or securely export them for setup commands; do not put secrets in shell command arguments/history.
+4. In a desktop session **on that host as the same OS user**, run `node scripts/petboost/worker.mjs login` and personally complete Petboost sign-in. The script never collects the password. Close no external browser profiles. Then run `node scripts/petboost/worker.mjs verify`. This uses headless Chromium and the worker profile, reads all today's booking identities and verifies completeness without importing. It writes a small private verification marker only after success. Do not install/enable the timer unless this passes. If the provider blocks the worker, stop and seek a supported integration; do not bypass it.
+5. An administrator can create its disabled configuration row with `insert into public.petboost_sync(workspace_id) values ('WORKSPACE_UUID');`. After successful worker verification and the admission review, enable only that workspace row. No browser role can configure/enable it.
+6. Copy the reviewed service and timer examples into systemd, adapt paths and Node location, and run `systemctl enable --now petboost-sync.timer` only after the preceding checks. Use a supported Chromium sandbox configuration on the host; do not add `--no-sandbox`. These examples were not installed here. Confirm a manual request and then a timed run, independent staff refresh, cancellation handling and retained assignments. Review sanitized service logs.
+
+Schedule checks run every minute, but the reader runs only for a manual request or one of **Monday–Friday 06:30, 07:30, 08:30, 09:30, 10:30, 11:30 Australia/Brisbane**. Slot calculations use Brisbane explicitly, independent of host timezone. The database validates slots and consumes each once. There is a ten-minute catch-up window; later missed runs are not replayed. Manual requests are available outside the six slots, for the current Brisbane day. A failed scheduled slot is recorded and can be retried manually; it is not retried automatically in a loop.
+
+If the worker crashes, the lease expires and the UI shows a stalled run; the existing board remains. A result that arrives after the lease expires or midnight is rejected. If the session expires, the UI asks for renewal. Repeat login and verify **on the worker host**, then request a manual sync. Check service health separately: a failed database/network connection may prevent the worker from recording an error, so the UI's stale heartbeat is also significant.
+
+## Computer availability and cost
+
+An office computer running the worker must remain powered on, awake and connected. A hosted worker with persistent disk runs independently of the user's computer/phone. No paid host has been selected, so there is no verified monthly hosting quote and no new recurring charge was activated. An existing suitable always-on host avoids a new hosting subscription, with normal electricity/network costs. A new host adds its provider's compute/disk fee; Supabase usage still applies under the existing plan. Netlify frontend publication alone cannot supply this persistent Chromium session.
+
+## Verification
+
+Synthetic PostgreSQL tests execute the real migration: repeated/source-changed bookings, preserved staff assignments/arrival/notes, cancellation/rebooking, manual-removal preservation, new additions, incomplete/stale/wrong-date payload rejection, duplicate identities, atomic identity-review rollback, worker leases, login-error state and frontend permission/workspace isolation. Reader tests cover Brisbane schedule/date boundaries, multiple pets per appointment, non-daycare filtering, explicit zero, unknown/incomplete data and expired sessions. Browser tests cover queued manual requests, success refresh, renewal, stale heartbeat, review flags and phone-width layout.
+
+The cloud-browser checks do not constitute unattended worker acceptance. Hosted SQL/RLS, a full headless read from the actual worker, scheduled delivery, and actual phone use must be reported unverified until run. No real dog names, client notes or authentication/session material belong in test fixtures or commits.
+
+Implementation commit `df13b35` passed GitHub CI including the browser suite and PWA checks: https://github.com/patrickbarksandrecreation-boop/dog-daycare-ops-planner/actions/runs/38822524778. Local Chromium installation remained blocked; these CI checks use synthetic fixtures and do not verify an authenticated Petboost worker or production import.

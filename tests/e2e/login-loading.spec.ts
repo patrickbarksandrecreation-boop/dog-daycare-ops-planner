@@ -21,7 +21,9 @@ test('login and remembered-session reload show loading, then failure/retry or em
       if (fail) { status = 503; data = { message: 'Temporary board failure' }; }
       else data = { day: { id: 'day', local_date: route.request().postDataJSON().p_date, revision: 0, workspace_id: 'workspace' },
         groups: [{ group_id: 'group-1', displayed_name: 'Group 1', display_order: 1, run_version: 1 }], dogs: [], assignments: [], rules: [] };
-    } else if (!url.includes('/rpc/ensure_planning_day')) throw new Error(`Unexpected request: ${new URL(url).pathname}`);
+    } else if (url.includes('/rpc/current_workspace')) data = 'workspace';
+    else if (url.includes('/petboost_sync')) data = null;
+    else if (!url.includes('/rpc/ensure_planning_day')) throw new Error(`Unexpected request: ${new URL(url).pathname}`);
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(data) });
   });
   await page.routeWebSocket(/browser-test\.supabase\.co/, socket => { socket.onMessage(() => {}); });

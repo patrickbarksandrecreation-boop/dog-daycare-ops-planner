@@ -26,6 +26,7 @@ import { BehaviourEditor } from './components/BehaviourEditor';
 import { matchesDog, shortDogNames } from './dogLabels';
 import { GroupLane } from './components/GroupLane';
 import { PanelResize, usePanelSizes } from './components/PanelResize';
+import { BookingSync } from './components/BookingSync';
 
 function DestinationTab({ id, name, active, choose, summary }: {
   id: string; name: string; active: boolean; choose: () => void; summary: string;
@@ -199,6 +200,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
       </div>
       <button className="text-button" onClick={() => setHistory(true)} disabled={!state}><History size={15}/>Day records</button>
     </div>
+    {repo.bookingSync && repo.requestBookingSync && <BookingSync repo={repo} date={date} dogs={state?.dogs || []} editable={editable} refresh={refresh}/>}
     {error && <div className="notice error" role="alert"><span>{error}</span>{!loading && <button onClick={() => { setError(''); refresh(); }}>Retry</button>}{!loadError && <button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button>}</div>}
     {connection === 'offline' && <div className="notice offline">Editing paused. {state ? 'Last loaded board shown; reconnect to save changes.' : 'Reconnect to load the board.'}</div>}
     {!state ? <main className="loading-board" aria-busy={loading}><PawPrint size={35}/><h2 role="status">{loading ? 'Opening the daily board…' : loadError ? 'Unable to open the daily board.' : 'Waiting for a connection…'}</h2></main> :

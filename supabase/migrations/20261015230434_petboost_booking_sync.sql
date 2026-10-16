@@ -77,6 +77,10 @@ begin
     where workspace_id=p_workspace and run_id=p_run;
 end; $$;
 
+create function public.require_petboost_worker_verified(p_workspace uuid) returns void
+language plpgsql security definer set search_path='' as $$ begin return; end; $$;
+revoke all on function public.require_petboost_worker_verified(uuid) from public,anon,authenticated;
+
 create function public.apply_petboost_sync(p_workspace uuid,p_run uuid,p_snapshot jsonb) returns void
 language plpgsql security definer set search_path='' as $$
 declare s public.petboost_sync; d date := (clock_timestamp() at time zone 'Australia/Brisbane')::date;
@@ -84,6 +88,7 @@ declare s public.petboost_sync; d date := (clock_timestamp() at time zone 'Austr
 begin
   select * into s from public.petboost_sync where workspace_id=p_workspace for update;
   if not found or not s.enabled or p_run is null or s.run_id is distinct from p_run or s.lease_until is null or s.lease_until<=clock_timestamp() then raise exception 'Expired sync lease'; end if;
+  perform public.require_petboost_worker_verified(p_workspace);
   if exists(select 1 from public.workspaces where id=p_workspace and anonymous_pilot_enabled) then
     raise exception 'Workplace access review required before importing real bookings';
   end if;

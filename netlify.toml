@@ -6,6 +6,18 @@
   NODE_VERSION = "24"
   PNPM_FLAGS = "--frozen-lockfile"
 
+[functions]
+  node_bundler = "esbuild"
+
+[functions."petboost-run-background"]
+  external_node_modules = ["@sparticuz/chromium", "playwright-core"]
+  included_files = ["node_modules/@sparticuz/chromium/bin/**"]
+
+[functions."petboost-verify-background"]
+  external_node_modules = ["@sparticuz/chromium", "playwright-core"]
+  included_files = ["node_modules/@sparticuz/chromium/bin/**"]
+
+
 # Existing files take precedence. Browser deep links return the SPA shell.
 [[redirects]]
   from = "/*"

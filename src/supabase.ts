@@ -39,7 +39,16 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
       const active = new Set((bookings || []).filter(b => b.active).map(b => b.dog_id));
       return { ...sync, missingDogIds: [...new Set((bookings || []).filter(b => !b.active && !active.has(b.dog_id)).map(b => b.dog_id))] } as BookingSync;
     },
-    requestBookingSync: () => rpc('request_petboost_sync'),
+    async requestBookingSync() {
+      await rpc('request_petboost_sync');
+      if (import.meta.env.VITE_PETBOOST_NETLIFY !== 'true') return;
+      const { data: { session } } = await db.auth.getSession();
+      if (!session?.access_token) throw new Error('Sign in again to start booking sync.');
+      const response = await fetch('/.netlify/functions/petboost-kick', {
+        method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (!response.ok) throw new Error('Sync could not start. Your request is queued; check the worker status.');
+    },
     async profile() {
       // The session ID selects a row; RLS and every planner RPC still verify access on the server.
       const user = await sessionUser();

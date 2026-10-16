@@ -7,6 +7,7 @@ export type BookingSync = {
   requested_at: string | null; claimed_request_at: string | null;
   lease_until: string | null; last_attempt_at: string | null;
   missingDogIds: string[];
+  worker_mode?: 'persistent' | 'netlify';
 };
 export interface Repository {
   demo: boolean;

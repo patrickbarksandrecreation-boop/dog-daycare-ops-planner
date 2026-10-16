@@ -30,7 +30,14 @@ export function BookingSync({ repo, date, dogs, editable, refresh }: {
     return ()=>{alive=false;clearInterval(timer);};
   },[repo,date]);
   const stamp=(value:string|null)=>value ? new Date(value).toLocaleString('en-AU',{timeZone:'Australia/Brisbane',dateStyle:'short',timeStyle:'short'}) : 'Never';
-  const workerStale=sync?.enabled && (!sync.heartbeat_at || Date.now()-Date.parse(sync.heartbeat_at)>3*60_000);
+  const localNow=new Date(Date.now()+10*60*60_000);
+  const hour=localNow.getUTCHours(), minute=localNow.getUTCMinutes();
+  const dueHour=Math.min(11,hour-(minute<40?1:0));
+  const due=new Date(localNow); due.setUTCHours(dueHour,30,0,0);
+  const missedNetlify=![0,6].includes(localNow.getUTCDay()) && dueHour>=6
+    && (!sync?.last_attempt_at || Date.parse(sync.last_attempt_at)<due.getTime()-10*60*60_000);
+  const workerStale=sync?.enabled && (sync.worker_mode==='netlify' ? missedNetlify :
+    !sync.heartbeat_at || Date.now()-Date.parse(sync.heartbeat_at)>3*60_000);
   const running=sync?.lease_until && Date.parse(sync.lease_until)>Date.now();
   const stalled=sync?.lease_until && Date.parse(sync.lease_until)<=Date.now();
   const queued=sync?.requested_at && (!sync.claimed_request_at || sync.requested_at>sync.claimed_request_at);
@@ -48,7 +55,7 @@ export function BookingSync({ repo, date, dogs, editable, refresh }: {
       }}>{pending?'Requesting…':'Sync bookings'}</button>
     {error && <p role="alert">{error}</p>}
     {sync?.last_error_code && <p role="alert">{messages[sync.last_error_code] || messages.worker_error}</p>}
-    {workerStale && <p role="alert">Sync worker is not checking in. Automatic and manual sync may be delayed.</p>}
+    {workerStale && <p role="alert">{sync?.worker_mode==='netlify' ? 'A scheduled sync has not started. Check Netlify worker logs.' : 'Sync worker is not checking in. Automatic and manual sync may be delayed.'}</p>}
     {stalled && <p role="alert">The last sync did not finish. The existing board is preserved.</p>}
     {!!sync?.missingDogIds.length && <p role="alert">Cancelled or no longer in Petboost’s latest list — review: {sync.missingDogIds.map(id=>dogs.find(d=>d.id===id)?.name || 'Dog unavailable').join(', ')}. Their day records and staff changes are retained.</p>}
   </section>;

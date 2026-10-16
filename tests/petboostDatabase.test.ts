@@ -24,6 +24,40 @@ beforeAll(async()=>{
     alter table storage.objects enable row level security; grant select,insert,delete on storage.objects to authenticated;`);
   for(const file of readdirSync('supabase/migrations').filter(f=>f.endsWith('.sql')).sort()) await db.exec(readFileSync(`supabase/migrations/${file}`,'utf8').replace('alter publication supabase_realtime add table public.planning_days,public.dogs;',''));
 });
+it('keeps encrypted sessions service-only and requires a fresh Netlify verification after session seeding',async()=>{
+  await expect(q('select public.read_petboost_session($1)',[workspace])).rejects.toThrow('permission denied');
+  await expect(q('select * from public.petboost_sessions')).rejects.toThrow('permission denied');
+  await role();await q("update public.petboost_sync set worker_mode='netlify' where workspace_id=$1",[workspace]);
+  const token=await claim();await expect(apply([row()],{},token)).rejects.toThrow('Verify Petboost session');
+  await q('select public.save_petboost_session($1,$2,null)',[workspace,'Synthetic encrypted envelope']);
+  expect((await q('select public.read_petboost_session($1) s',[workspace]))[0].s).toBe('Synthetic encrypted envelope');
+  const verification=crypto.randomUUID();
+  await q('select public.claim_petboost_verification($1,$2)',[workspace,verification]);
+  await q('select public.finish_petboost_verification($1,$2,null)',[workspace,verification]);
+  await role();await q('update public.petboost_sync set requested_at=null,claimed_request_at=null where workspace_id=$1',[workspace]);
+  await apply([row()]);
+  await role('service_role');await q('select public.save_petboost_session($1,$2,null)',[workspace,'Synthetic renewed envelope']);
+  expect((await q('select public.read_petboost_verification($1) s',[workspace]))[0].s.verified_at).toBeNull();
+  await expect(q('select public.save_petboost_session($1,$2,$3)',[workspace,'Synthetic outdated envelope',token])).rejects.toThrow('Expired sync lease');
+});
+it('fences verification and imports when a session is renewed, and correlates verification outcomes',async()=>{
+  await role();await q("update public.petboost_sync set worker_mode='netlify' where workspace_id=$1",[workspace]);
+  await role('service_role');
+  await q('select public.save_petboost_session($1,$2,null)',[workspace,'Synthetic initial encrypted envelope']);
+  const oldRun=crypto.randomUUID(),newRun=crypto.randomUUID();
+  expect((await q('select public.claim_petboost_verification($1,$2) token',[workspace,oldRun]))[0].token).toBe(oldRun);
+  expect((await q('select public.claim_petboost_verification($1,$2) token',[workspace,newRun]))[0].token).toBeNull();
+  await q('select public.save_petboost_session($1,$2,null)',[workspace,'Synthetic renewed encrypted envelope']);
+  await expect(q('select public.save_petboost_session($1,$2,$3)',[workspace,'Synthetic stale encrypted envelope',oldRun])).rejects.toThrow('Expired sync lease');
+  await q('select public.finish_petboost_verification($1,$2,null)',[workspace,oldRun]);
+  expect((await q('select public.read_petboost_verification($1) s',[workspace]))[0].s.verified_at).toBeNull();
+  await q('select public.claim_petboost_verification($1,$2)',[workspace,newRun]);
+  await q("select public.finish_petboost_verification($1,$2,'login_required')",[workspace,oldRun]);
+  await q('select public.finish_petboost_verification($1,$2,null)',[workspace,newRun]);
+  const result=(await q('select public.read_petboost_verification($1) s',[workspace]))[0].s;
+  expect(result.run_id).toBe(newRun);expect(result.finished_at).toBeTruthy();expect(result.verified_at).toBeTruthy();expect(result.error).toBeNull();
+  expect((await q('select public.read_petboost_session($1) s',[workspace]))[0].s).toBe('Synthetic renewed encrypted envelope');
+});
 beforeEach(async()=>{
   await role(); workspace=crypto.randomUUID();staff=crypto.randomUUID();
   await q('insert into public.workspaces(id,name) values($1,$2)',[workspace,'Synthetic sync test']);

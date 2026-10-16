@@ -1,5 +1,7 @@
 # Petboost booking sync
 
+The API-free Netlify alternative is documented in [PETBOOST-NETLIFY.md](PETBOOST-NETLIFY.md). It restores an encrypted session for each run and does not require the persistent Linux host described below.
+
 ## Verified access and release status
 
 16 October 2026 Brisbane: signed in to the separate ChatGPT cloud browser and read the business calendar. The calendar exposed stable 24-character appointment IDs, distinct stable pet profile links (including two dogs sharing one appointment ID), service names, Brisbane dates and statuses. Its Show All count matched 58 rendered rows. A course row and Ready to Pay status were observed and handled. No Petboost booking, attendance or payment was modified. This verifies the UI route and selectors, **not access from a hosted worker**.

@@ -47,28 +47,31 @@ export async function launchServerless() {
   const [{default: binary},{chromium}]=await Promise.all([import('@sparticuz/chromium'),import('playwright-core')]);
   return chromium.launch({executablePath:await binary.executablePath(),args:binary.args,headless:true});
 }
-export async function runNetlify({env=process.env,db,launch=launchServerless,reader=readPetboost,now=new Date(),verifyOnly=false,verificationId=randomUUID()}={}) {
+export async function runNetlify({env=process.env,db,launch=launchServerless,reader=readPetboost,now=new Date(),verifyOnly=false,verificationId=randomUUID(),onDiagnostic=()=>{}}={}) {
   if(env.CONTEXT!=='production' || (!verifyOnly && !enabled(env))) return {status:'disabled'};
   const c=serverConfig(env);db ||= serverClient(env);
   const token=verifyOnly
     ? await rpc(db,'claim_petboost_verification',{p_workspace:c.workspace,p_run:verificationId})
     : await rpc(db,'claim_petboost_sync',{p_workspace:c.workspace,p_slot:scheduledSlot(now)});
   if(!token) return {status:'idle'};
-  let browser;
+  let browser,stage='session restore';
+  const readerStages=new Set(['account navigation','account menu','business identity','calendar navigation','calendar date','today heading','calendar total','calendar validation','appointment details']);
   try {
     const envelope=await rpc(db,'read_petboost_session',{p_workspace:c.workspace});
     if(!envelope) throw new SyncError('login_required');
     let state;
     try {state=unseal(envelope,c.sessionKey,`${c.workspace}:${c.business}`);} catch {throw new SyncError('login_required');}
-    browser=await launch();
+    stage='browser launch';browser=await launch();
+    stage='context restore';
     const context=await browser.newContext({storageState:state,timezoneId:'Australia/Brisbane',locale:'en-AU'});
     const page=await context.newPage();
     // Abort before the eight-minute DB lease expires; never accept late results.
     let timer;
     const snapshot=await Promise.race([
-      reader(page,c.business),
+      reader(page,c.business,{onStep:step=>{if(readerStages.has(step))stage=step;}}),
       new Promise((_,reject)=>{timer=setTimeout(()=>reject(new SyncError('incomplete_fetch')),7*60*1000);}),
     ]).finally(()=>clearTimeout(timer));
+    stage='session refresh';
     const updated=await context.storageState({indexedDB:true});
     await rpc(db,'save_petboost_session',{p_workspace:c.workspace,p_run:token,p_state:seal(updated,c.sessionKey,`${c.workspace}:${c.business}`)});
     if(verifyOnly) await rpc(db,'finish_petboost_verification',{p_workspace:c.workspace,p_run:token,p_code:null});
@@ -76,6 +79,8 @@ export async function runNetlify({env=process.env,db,launch=launchServerless,rea
     return {status:'success'};
   } catch(error) {
     const code=['login_required','incomplete_fetch','identity_review'].includes(error.code)?error.code:'worker_error';
+    // Fixed labels only: never log browser exceptions, URLs, DOM or session values.
+    onDiagnostic({stage,code});
     if(verifyOnly) await rpc(db,'finish_petboost_verification',{p_workspace:c.workspace,p_run:token,p_code:code});
     else await rpc(db,'fail_petboost_sync',{p_workspace:c.workspace,p_run:token,p_code:code});
     return {status:code};

@@ -1,5 +1,9 @@
 # Implementation status
 
+## Hosted Petboost verification (17 October, afternoon)
+
+PR #13 passed full CI and Netlify preview, merged as `98d0424`, and published production release `6ad31f911061fa01fa5b6bee`. The first hosted read claimed its verification lease but finished with `incomplete_fetch` after about 94 seconds; Netlify reported 1015 MB memory usage within its 1 GB allocation. Hosted login/read acceptance has not passed. This follow-up adds fixed allowlisted failure-stage diagnostics; it does not log exception messages, DOM, URLs, credentials or bookings. Seven focused runtime tests pass, including unknown-stage/error sanitization. Imports remain disabled. The owner selected patrick.barksandrecreation@gmail.com as the initial permitted staff email; named sign-in is not yet prepared or activated.
+
 ## Petboost disabled deployment (17 October 2026 Brisbane)
 
 With explicit owner approval, PR #12 was merged at `3858c5f` and production deployed all five Netlify functions. Both additive sync migrations are applied (cloud versions `20261016100317` and `20261016100323`). Hosted transactional lease/renewal checks passed; the production frontend matches the expected build and the manual endpoint returns `503 Sync is not enabled`. Sync remains disabled in Netlify and the database, and the only workspace still has open anonymous enrollment. No bookings were imported or admission controls changed.

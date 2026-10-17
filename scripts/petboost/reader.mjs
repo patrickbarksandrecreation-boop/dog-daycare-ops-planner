@@ -45,8 +45,9 @@ async function checkLogin(page) {
   if(await page.getByRole('heading',{name:'Login to Petboost Business',exact:true}).count()) throw new SyncError('login_required');
 }
 export async function readCalendar(page,onStep=()=>{}) {
-  onStep('calendar date');
+  onStep('calendar navigation');
   await page.goto('https://business.petboost.com/appointments',{waitUntil:'domcontentloaded',timeout:30000});
+  onStep('calendar date');
   // Petboost can restore a date selected during the interactive sign-in.
   const dateField=page.getByRole('textbox',{name:/^[A-Z][a-z]{2}, \d{1,2} [A-Z][a-z]{2} \d{4}$/});
   await dateField.waitFor({timeout:30000}).catch(async()=>{
@@ -54,6 +55,7 @@ export async function readCalendar(page,onStep=()=>{}) {
   });
   const today=page.getByRole('button',{name:'Today',exact:true});
   if(await today.isVisible()) await today.click();
+  onStep('today heading');
   await page.getByRole('heading',{name:"Today's Appointments",exact:true}).waitFor({timeout:30000}).catch(async()=>{
     await checkLogin(page); throw new SyncError('incomplete_fetch');
   });

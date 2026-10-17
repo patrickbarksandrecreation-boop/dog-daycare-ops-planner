@@ -5,7 +5,7 @@ export default async (request,context)=>{
   try {
     const {verificationId}=await request.json();
     if(typeof verificationId!=='string' || !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(verificationId)) return;
-    const result=await runNetlify({env,verifyOnly:true,verificationId});
+    const result=await runNetlify({env,verifyOnly:true,verificationId,onDiagnostic:({stage,code})=>console.error('Petboost verification check:',stage,code)});
     console.log('Petboost read-only verification:',result.status);
   }
   catch {console.error('Petboost verification could not record its status.');}

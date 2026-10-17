@@ -28,7 +28,7 @@ it('supports multi-pet appointments, filters grooming and cancellations, and pro
 it('classifies expired sessions as login_required without any credential or booking writes',async()=>{
   let navigations=0;
   const page={goto:async()=>{navigations++;},url:()=> 'https://petboost-business.au.auth0.com/u/login',
-    getByRole:()=>({waitFor:async()=>{throw Error('timeout');}})};
+    getByRole:()=>({or(){return this;},first(){return this;},waitFor:async()=>{throw Error('timeout');}})};
   await expect(readPetboost(page,'Synthetic Enterprise')).rejects.toMatchObject({code:'login_required'});
   expect(navigations).toBe(1);
 });

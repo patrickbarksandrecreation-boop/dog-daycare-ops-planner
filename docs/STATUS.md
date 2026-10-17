@@ -1,5 +1,13 @@
 # Implementation status
 
+## Petboost disabled deployment (17 October 2026 Brisbane)
+
+With explicit owner approval, PR #12 was merged at `3858c5f` and production deployed all five Netlify functions. Both additive sync migrations are applied (cloud versions `20261016100317` and `20261016100323`). Hosted transactional lease/renewal checks passed; the production frontend matches the expected build and the manual endpoint returns `503 Sync is not enabled`. Sync remains disabled in Netlify and the database, and the only workspace still has open anonymous enrollment. No bookings were imported or admission controls changed.
+
+All required production-context server settings, including the secret-valued service key, are saved and deployed in Netlify release `6ad2a4566d8dec141aa1b9d4`. The Windows bundled headed Chromium failed with `spawn UNKNOWN`; installed Edge worked, so the desktop helper accepts optional `PETBOOST_SETUP_BROWSER=msedge` (or `chrome`). It can keep login in memory for explicit supervised retries. Failure messages identify only a fixed stage and sanitized error code.
+
+Live setup exposed remembered calendar dates, explicit empty-day text instead of Show All, and the visible desktop sidebar instead of Open menu. The reader now handles those states, waits for DOM readiness rather than all page resources, and still validates today's date, exact business, counts and two consistent reads. Six synthetic browser regressions and ten focused unit/runtime tests pass. Desktop initial and independently restored-session reads passed on 17 October; encrypted session upload succeeded. The owner confirmed no weekend attendance, so this empty Saturday check does not establish populated weekday acceptance. Hosted verification awaits publication of these fixes. Imports remain disabled; activation also requires an approved workplace admission arrangement.
+
 ## Netlify Petboost recovery (draft; 16 October 2026 Brisbane)
 
 Recovered the uncommitted Netlify extension from the interrupted implementation chat into PR #12. It adds five functions for the six weekday Brisbane slots, authenticated manual dispatch, encrypted session storage/refresh and read-only hosted verification. Publication guards and disabled-by-default configuration prevent preview imports. Session renewal now fences old workers, verification shares the worker lease, and the verification helper waits for its own run ID so an older failure cannot abort a new check.

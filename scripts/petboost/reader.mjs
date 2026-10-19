@@ -18,7 +18,7 @@ export function validateCalendar({date,expectedCount,events}, now=new Date()) {
     || events.length!==expectedCount) throw new SyncError('incomplete_fetch');
   for (const event of events) {
     if (!/^[a-f0-9]{24}$/.test(event.bookingId) || !event.name || !event.service || !event.fullName
-      || !['Confirmed','In Progress','Completed','Cancelled','Canceled','No Show','Scheduled','Ready to Pay'].includes(event.status)
+      || !['Confirmed','In Progress','Complete','Completed','Paid','Cancelled','Canceled','No Show','Scheduled','Ready to Pay'].includes(event.status)
       || brisbaneDate(new Date(event.start))!==date) throw new SyncError('incomplete_fetch');
   }
   return JSON.stringify(events.map(e=>[e.bookingId,e.name,e.service,e.start,e.status]).sort());
@@ -43,6 +43,13 @@ export function normalizeSnapshot(calendar, details, now=new Date()) {
 async function checkLogin(page) {
   if(new URL(page.url()).hostname!=='business.petboost.com') throw new SyncError('login_required');
   if(await page.getByRole('heading',{name:'Login to Petboost Business',exact:true}).count()) throw new SyncError('login_required');
+}
+export function calendarStart(value) {
+  // The calendar's accessible label uses English "at", which Date.parse rejects.
+  const normalized=value.replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), (\w+ \d{1,2}, \d{4}) at (\d{1,2}:\d{2}:\d{2} [AP]M GMT\+10:00)$/, '$2 $3');
+  const date=new Date(normalized);
+  if(!Number.isFinite(date.getTime())) throw new SyncError('incomplete_fetch');
+  return date.toISOString();
 }
 export async function readCalendar(page,onStep=()=>{}) {
   onStep('calendar navigation');
@@ -77,7 +84,7 @@ export async function readCalendar(page,onStep=()=>{}) {
   const raw=await page.locator('[role="button"][data-id^="Appointment_"]').evaluateAll(els=>els.map(e=>({
     label:e.getAttribute('aria-label'),bookingId:e.getAttribute('data-id')?.replace('Appointment_',''),fullName:e.querySelector('h3')?.textContent,
     status:Array.from(e.querySelectorAll('span')).map(n=>n.textContent?.trim())
-      .find(t=>['Confirmed','In Progress','Completed','Cancelled','Canceled','No Show','Scheduled','Ready to Pay'].includes(t)),
+      .find(t=>['Confirmed','In Progress','Complete','Completed','Paid','Cancelled','Canceled','No Show','Scheduled','Ready to Pay'].includes(t)),
   })));
   onStep('calendar validation');
   const dateLabel=await dateField.inputValue();
@@ -87,9 +94,9 @@ export async function readCalendar(page,onStep=()=>{}) {
     if(!m) {
       const course=row.label?.match(/^(.*Course) Begin From (.*?) Ends At /);
       if(!course || row.status!=='Scheduled') throw new SyncError('incomplete_fetch');
-      return {name:course[1],service:'Course',bookingId:row.bookingId,start:new Date(course[2]).toISOString(),fullName:course[1],status:row.status};
+      return {name:course[1],service:'Course',bookingId:row.bookingId,start:calendarStart(course[2]),fullName:course[1],status:row.status};
     }
-    return {name:m[1],service:m[2],bookingId:m[3],start:new Date(m[4]).toISOString(),fullName:row.fullName,status:row.status};
+    return {name:m[1],service:m[2],bookingId:m[3],start:calendarStart(m[4]),fullName:row.fullName,status:row.status};
   });
   const calendar={date,expectedCount,events}; validateCalendar(calendar); return calendar;
 }

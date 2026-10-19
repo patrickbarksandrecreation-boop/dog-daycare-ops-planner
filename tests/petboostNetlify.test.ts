@@ -60,3 +60,12 @@ it('does not launch another verification browser while a job owns the lease',asy
   expect(await runNetlify({...f,env,verifyOnly:true})).toEqual({status:'idle'});
   expect(f.launch).not.toHaveBeenCalled();
 });
+it('reports only fixed diagnostic stages and sanitized errors without session data',async()=>{
+  const f=fixture(),onDiagnostic=vi.fn();
+  const reader=async(_page:unknown,_business:string,{onStep}:any)=>{
+    onStep('calendar total');onStep('private-record-name');throw Error('private-browser-message');
+  };
+  expect(await runNetlify({...f,reader,env,verifyOnly:true,onDiagnostic})).toEqual({status:'worker_error'});
+  expect(onDiagnostic).toHaveBeenCalledWith({stage:'calendar total',code:'worker_error'});
+  expect(f.calls.some(c=>c.name==='apply_petboost_sync')).toBe(false);
+});

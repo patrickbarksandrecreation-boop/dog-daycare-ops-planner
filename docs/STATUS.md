@@ -1,5 +1,9 @@
 # Implementation status
 
+## Weekday calendar parsing (19 October 2026)
+
+PR #15 passed full CI and published as `deade50` in deploy `6ad5c80b8309a22aee59ae9e`. Hosted verification still failed at calendar navigation with 1016 MB peak usage (98 seconds). A desktop comparison using the same encrypted session passed navigation and exposed independent populated-calendar parsing gaps: accessible timestamps contain English "at", and live cards use Complete/Paid statuses. The reader now accepts those observed labels and parses the timestamp format. Thirteen focused tests pass; the browser regression now uses the observed human-readable timestamp and Complete status. A read-only desktop comparison helper prints only stages and aggregate counts. Hosted acceptance and staff admission remain outstanding; imports stay disabled.
+
 ## Hosted resource budget (19 October 2026)
 
 PR #14 passed CI and published as `cf85466` in deploy `6ad5bbc214442e35bbd39fd9`. A weekday read-only check passed account/business checks but failed at calendar navigation with `incomplete_fetch`; Netlify reported 1016 MB peak memory and 88 seconds. Memory pressure is suspected, not confirmed. The server browser now skips images, media and fonts while allowing documents, styles, scripts and application data. Imports remain disabled; hosted acceptance and restricted staff access are outstanding.

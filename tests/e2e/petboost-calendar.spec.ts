@@ -20,12 +20,13 @@ test('reader resets a remembered date and accepts the explicit empty-day state',
 
 test('reader expands and validates a populated calendar',async({page})=>{
   const id='a'.repeat(24),start=`${today}T06:30:00+10:00`;
+  const accessibleStart=new Intl.DateTimeFormat('en-US',{timeZone:'Australia/Brisbane',weekday:'long',month:'long',day:'numeric',year:'numeric'}).format(new Date(start))+' at 6:30:00 AM GMT+10:00';
   await page.route('https://business.petboost.com/appointments',route=>route.fulfill({contentType:'text/html',body:
     `<h1>Today's Appointments</h1>${dateInput()}<button onclick="document.querySelector('#event').hidden=false">Show All 1</button>
-    <div id="event" hidden role="button" data-id="Appointment_${id}" aria-label="Synthetic - Daycare | Full Day - ${id} Begin From ${start} Ends At later"><h3>Synthetic Dog</h3><span>Confirmed</span></div>`}));
+    <div id="event" hidden role="button" data-id="Appointment_${id}" aria-label="Synthetic - Daycare | Full Day - ${id} Begin From ${accessibleStart} Ends At later"><h3>Synthetic Dog</h3><span>Complete</span></div>`}));
   const result=await readCalendar(page);
   expect(result.date).toBe(today);expect(result.expectedCount).toBe(1);
-  expect(result.events).toEqual([{bookingId:id,name:'Synthetic',fullName:'Synthetic Dog',service:'Daycare | Full Day',status:'Confirmed',start:new Date(start).toISOString()}]);
+  expect(result.events).toEqual([{bookingId:id,name:'Synthetic',fullName:'Synthetic Dog',service:'Daycare | Full Day',status:'Complete',start:new Date(start).toISOString()}]);
 });
 
 test('reader rejects an empty marker for the wrong date',async({page})=>{

@@ -14,10 +14,10 @@ function fixture(errorCode?:string) {
     calls.push({name,args});
     return {data:name==='claim_petboost_sync'?'synthetic-run':name==='claim_petboost_verification'?args.p_run:name==='read_petboost_session'?seal(state,secret,binding):null,error:null};
   })};
-  const close=vi.fn(),context={newPage:async()=>({}),storageState:async()=>state};
+  const close=vi.fn(),context={route:vi.fn(async(_pattern:string,_handler:any)=>{}),newPage:async()=>({}),storageState:async()=>state};
   const launch=vi.fn(async()=>({newContext:async()=>context,close}));
   const reader=vi.fn(async()=>{if(errorCode)throw Object.assign(new Error(errorCode),{code:errorCode});return {date:'2026-10-16',bookings:[]};});
-  return {db,calls,launch,reader,close};
+  return {db,calls,launch,reader,close,context};
 }
 it('encrypts sessions with random nonces and binds authentication to the exact workspace/business',()=>{
   const a=seal(state,secret,binding),b=seal(state,secret,binding);
@@ -46,6 +46,16 @@ it('restores encrypted session, saves refreshed state under the lease, then impo
 it('records session expiry without applying an empty snapshot or replacing saved state',async()=>{
   const f=fixture('login_required');expect(await runNetlify({...f,env})).toEqual({status:'login_required'});
   expect(f.calls.map(c=>c.name)).toEqual(['claim_petboost_sync','read_petboost_session','fail_petboost_sync']);expect(f.close).toHaveBeenCalledOnce();
+});
+it('skips visual assets while allowing navigation, scripts and booking data',async()=>{
+  const f=fixture();await runNetlify({...f,env,verifyOnly:true});
+  const handler=f.context.route.mock.calls[0][1];
+  for(const type of ['image','media','font','document','script','stylesheet','fetch','xhr']) {
+    const route={request:()=>({resourceType:()=>type}),abort:vi.fn(),continue:vi.fn()};
+    await handler(route);
+    expect(route.abort).toHaveBeenCalledTimes(['image','media','font'].includes(type)?1:0);
+    expect(route.continue).toHaveBeenCalledTimes(['image','media','font'].includes(type)?0:1);
+  }
 });
 it('read-only Netlify verification uses its own fenced lease with imports disabled and never applies bookings',async()=>{
   const f=fixture(),verificationId=crypto.randomUUID();

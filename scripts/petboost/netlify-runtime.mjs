@@ -64,6 +64,10 @@ export async function runNetlify({env=process.env,db,launch=launchServerless,rea
     stage='browser launch';browser=await launch();
     stage='context restore';
     const context=await browser.newContext({storageState:state,timezoneId:'Australia/Brisbane',locale:'en-AU'});
+    // The reader uses text and links only. Avoid decoding pet photos/media in
+    // the memory-limited function; retain scripts, styles and application data.
+    await context.route('**/*',route=>['image','media','font'].includes(route.request().resourceType())
+      ? route.abort() : route.continue());
     const page=await context.newPage();
     // Abort before the eight-minute DB lease expires; never accept late results.
     let timer;

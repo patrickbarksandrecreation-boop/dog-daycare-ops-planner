@@ -1,5 +1,9 @@
 # Implementation status
 
+## Hosted resource budget (19 October 2026)
+
+PR #14 passed CI and published as `cf85466` in deploy `6ad5bbc214442e35bbd39fd9`. A weekday read-only check passed account/business checks but failed at calendar navigation with `incomplete_fetch`; Netlify reported 1016 MB peak memory and 88 seconds. Memory pressure is suspected, not confirmed. The server browser now skips images, media and fonts while allowing documents, styles, scripts and application data. Imports remain disabled; hosted acceptance and restricted staff access are outstanding.
+
 ## Hosted Petboost verification (17 October, afternoon)
 
 PR #13 passed full CI and Netlify preview, merged as `98d0424`, and published production release `6ad31f911061fa01fa5b6bee`. The first hosted read claimed its verification lease but finished with `incomplete_fetch` after about 94 seconds; Netlify reported 1015 MB memory usage within its 1 GB allocation. Hosted login/read acceptance has not passed. This follow-up adds fixed allowlisted failure-stage diagnostics; it does not log exception messages, DOM, URLs, credentials or bookings. Seven focused runtime tests pass, including unknown-stage/error sanitization. Imports remain disabled. The owner selected patrick.barksandrecreation@gmail.com as the initial permitted staff email; named sign-in is not yet prepared or activated.

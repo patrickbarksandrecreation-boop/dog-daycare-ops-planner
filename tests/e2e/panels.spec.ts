@@ -60,13 +60,13 @@ test('vertical resizing sets a floor while additional dogs automatically extend 
   const group=(await geometry(page))[1]; expect(group.height).toBeGreaterThan(initial+32); expect(group.allInside).toBe(true);
   await expect(page.getByTestId('present-count')).toHaveText('0');
 });
-test('desktop resize preferences do not affect mobile tabs and horizontal strip',async({page})=>{
+test('desktop resize preferences do not affect mobile tabs and vertical unassigned list',async({page})=>{
   await open(page);
   await page.getByRole('button',{name:'Resize Group 1',exact:true}).focus(); await page.keyboard.press('ArrowRight');
   await page.setViewportSize({width:390,height:844});
   await expect(page.locator('.panel-resize:visible')).toHaveCount(0);
   await expect(page.getByRole('navigation',{name:'Group views and destinations'})).toBeVisible();
-  expect(await page.getByTestId('lane-unassigned').evaluate(p=>getComputedStyle(p.querySelector('.unassigned-cards')!).gridAutoFlow)).toBe('column');
+  expect(await page.getByTestId('lane-unassigned').evaluate(p=>getComputedStyle(p.querySelector('.unassigned-cards')!).gridAutoFlow)).toBe('row');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.getByRole('button',{name:'Select Archie',exact:true}).click();
   await page.getByLabel('Move selected dogs to',{exact:true}).selectOption('group-2');

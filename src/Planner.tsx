@@ -38,12 +38,13 @@ function DestinationTab({ id, name, active, choose, summary }: {
     <span>{name}</span><small>{summary}</small>
   </button>;
 }
-function Unassigned({ count, search, setSearch, selected, move, children, tools, resize, style }: {
+function Unassigned({ count, search, setSearch, selected, move, children, tools, resize, style, expanded, expand }: {
   count: number; search: string; setSearch: (s: string) => void; selected: boolean;
   move: () => void; children: ReactNode; tools: ReactNode; resize: ReactNode; style: CSSProperties;
+  expanded: boolean; expand: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unassigned' });
-  return <section ref={setNodeRef} className={`unassigned ${selected ? 'valid-target' : ''} ${isOver ? 'drop-over' : ''}`}
+  return <section ref={setNodeRef} className={`unassigned ${expanded ? 'expanded' : ''} ${selected ? 'valid-target' : ''} ${isOver ? 'drop-over' : ''}`}
     data-testid="lane-unassigned" data-panel-id="unassigned" style={style} onClick={event => {
       if (selected && !(event.target as HTMLElement).closest('button,input,article')) move();
     }}>
@@ -51,6 +52,7 @@ function Unassigned({ count, search, setSearch, selected, move, children, tools,
       <button className="unassigned-heading" disabled={!selected} onClick={move} aria-label="Move selected dogs to Unassigned">
         <h2>Unassigned</h2><span className="count">{count}</span>
       </button>
+      <button className="expand-unassigned" aria-expanded={expanded} onClick={expand}>View all unassigned</button>
       <label className="search"><Search size={16}/><input aria-label="Search unassigned dogs" placeholder="Search unassigned…" value={search} onChange={e => setSearch(e.target.value)}/>
         {search && <button className="icon-button" onClick={() => setSearch('')} aria-label="Clear unassigned search"><X size={14}/></button>}
       </label>
@@ -208,7 +210,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         onDragStart={event => { setDrag(state.assignments.find(a => a.id === event.active.id) || null); }}
         onDragCancel={() => setDrag(null)} onDragEnd={onDrop}>
         <div className="lane-layout" ref={panels.layoutRef} style={panels.columns(['unassigned', ...state.groups.map(g => g.group_id)])}>
-          <Unassigned style={panels.style('unassigned')} resize={<><PanelResize id="unassigned" name="Unassigned" resize={panels.resize}/><PanelResize id="unassigned" name="Unassigned" resize={panels.resize} widthOnly/></>} count={totals.unassigned} search={search} setSearch={setSearch} selected={selection.length > 0 && editable}
+          <Unassigned expanded={view === 'unassigned'} expand={() => setView('unassigned')} style={panels.style('unassigned')} resize={<><PanelResize id="unassigned" name="Unassigned" resize={panels.resize}/><PanelResize id="unassigned" name="Unassigned" resize={panels.resize} widthOnly/></>} count={totals.unassigned} search={search} setSearch={setSearch} selected={selection.length > 0 && editable}
             move={() => void moveSelected(null)}
             tools={<><button onClick={() => setDatabase(true)}><Database size={16}/>Dog database</button>
               <button className="primary" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/>New Dog</button></>}>
@@ -251,7 +253,6 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
                 <PanelResize id={g.group_id} name={g.displayed_name} resize={panels.resize} widthOnly/>
               </div>;
             })}
-            <p className="unassigned-view-note">Choose a dog in the strip above, then tap its destination. Swipe the strip to see more bookings.</p>
           </main>
         </div>
         <DragOverlay style={{ pointerEvents: 'none' }}>{drag && <div className="drag-preview"><Avatar dog={dogsById.get(drag.dog_id)!}/><strong>{dogsById.get(drag.dog_id)!.name}</strong><span>{drag.attendance_status}</span></div>}</DragOverlay>

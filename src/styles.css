@@ -58,6 +58,7 @@ small,.muted { color:var(--muted); }
 .unassigned-heading { display:flex; gap:9px; border:0; background:transparent; padding:0; flex-shrink:0; }
 .unassigned-heading:disabled,.group-destination:disabled { opacity:1; }
 .unassigned-heading h2 { font-size:14px; }
+.expand-unassigned { display:none; }
 .count { background:#e5ecdf; padding:3px 7px; border-radius:5px; font-size:12px; }
 .search { display:flex; align-items:center; gap:6px; border:1px solid #d8e0d5; border-radius:6px; padding:0 9px; background:#fff; min-width:0; }
 .search input { background:transparent; border:0; padding:8px 0; font-size:13px; }
@@ -205,16 +206,25 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .timezone { display:none; }
   .unassigned-toolbar { flex-wrap:wrap; padding:7px; gap:7px; }
   .unassigned-heading h2 { font-size:13px; }
-  .unassigned .search { width:auto; flex:1; }
+  .unassigned .search { width:100%; flex-basis:100%; }
+  .expand-unassigned { display:inline-flex; margin-left:auto; min-height:44px; font-size:12px; }
+  .unassigned.expanded .expand-unassigned { display:none; }
   .search input { font-size:14px; padding:10px 0; }
   .directory-tools { margin:0; width:100%; }
   .directory-tools button { flex:1; min-height:40px; }
-  .unassigned-cards { grid-template-rows:repeat(2,52px); grid-auto-columns:320px; padding:3px 7px 8px; }
+  .unassigned-cards { grid-auto-flow:row; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-auto-columns:auto; padding:3px 7px 8px; min-height:180px; max-height:260px; overflow-x:hidden; overflow-y:auto; touch-action:pan-y; }
+  .unassigned.expanded .unassigned-cards { max-height:none; overflow:visible; }
+  .unassigned-cards .dog-card { height:64px; gap:6px; }
+  .unassigned-cards .drag-handle { display:none; }
+  .unassigned-cards .avatar { width:38px; height:38px; }
+  .unassigned-cards .card-select { min-height:56px; }
+  .unassigned .unassigned-cards .info-action,.unassigned .unassigned-cards .arrival-action,.unassigned .unassigned-cards .present-mark { width:44px; min-width:44px; min-height:44px; }
+  .unassigned-cards .strip-empty { width:auto; max-width:100%; grid-row:auto; padding:12px 0; }
   .selection-bar { min-height:35px; font-size:11px; line-height:1.5; }
   .selection-bar small { display:none; }
   .selection-bar .text-button { min-height:40px; }
-  .group-tabs { display:flex; position:sticky; top:0; z-index:20; background:#f3f5f2; padding:5px 0 8px; gap:4px; overflow-x:auto; flex-shrink:0; border-bottom:1px solid var(--line); }
-  .group-tabs button { flex:1; min-width:70px; flex-direction:column; gap:3px; padding:6px 5px; min-height:49px; font-size:11px; }
+  .group-tabs { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); position:sticky; top:0; z-index:20; background:#f3f5f2; padding:5px 0 8px; gap:4px; flex-shrink:0; border-bottom:1px solid var(--line); }
+  .group-tabs button { min-width:0; flex-direction:column; gap:3px; padding:6px 5px; min-height:49px; font-size:11px; overflow-wrap:anywhere; }
   .group-tabs small { font-size:10px; }
   .group-tabs .active { background:#e1ead9; border-color:#a1b993; }
   .group-tabs.moving button { background:#eff7ff; border-color:#6397c9; }
@@ -239,7 +249,7 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .present-mark { min-width:49px; }
   .info-action { width:30px; min-height:44px; }
   .view-unassigned .group-wrapper { display:none; }
-  .view-unassigned .unassigned-view-note { display:block; padding:20px 8px; line-height:1.7; font-size:13px; color:var(--muted); }
+  .group-board.view-unassigned { display:none; }
   .planner-footer { flex-wrap:wrap; padding:8px 0; line-height:1.6; }
   .planner-footer .text-button { min-height:44px; }
   dialog { padding:16px; }
@@ -305,6 +315,13 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 /* Desktop panels share the available width and grow with their contents. */
 .lane-layout { display:contents; }
 .panel-resize { display:none; }
+@media(max-width:760px) {
+  .lane-layout { display:flex; flex-direction:column; gap:8px; }
+  .lane-layout > .selection-bar { order:0; }
+  .lane-layout > .group-tabs { order:1; }
+  .lane-layout > .unassigned { order:2; }
+  .lane-layout > .group-board { order:3; }
+}
 @media(min-width:761px) {
   .planner-shell { height:auto; min-height:100dvh; }
   .lane-layout { display:grid; grid-template-columns:var(--panel-columns); gap:14px; align-items:start; flex:1; }

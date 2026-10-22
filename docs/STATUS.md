@@ -1,5 +1,13 @@
 # Implementation status
 
+## Mobile Unassigned navigation fix
+
+Prepared on `fix/mobile-unassigned-navigation` from current main `deade50`. Phone Unassigned cards are now full-width vertical rows with 44px information/arrival targets and no touch drag grips. **View all unassigned** or the Unassigned tab expands the list into normal page scrolling. View tabs wrap, and the existing selection/destination chooser remains reachable. Desktop layout and assignment/attendance data handling are unchanged. [Production-preview screenshot](screenshots/unassigned-expanded-mobile.png).
+
+Validation: frozen pnpm install, production build, frontend/Edge TypeScript checks, all 114 unit/PostgreSQL tests and all 53 Chromium browser tests passed. New 360px/390px touch regressions cover scrolling 100 unassigned dogs without accidental selection/details, reaching the last dog, moves, search, selection across tabs, counts and overflow. Production-preview expanded-list/move/search checks passed without page errors. Physical phones and hosted release are unverified.
+
+The additional PWA smoke check reached the offline shell but failed its `navigator.onLine === false` assertion with system Chromium 151; the identical failure reproduces on an untouched archive of main `deade50`. PWA files were not changed. GitHub API access is denied by the environment network policy; Netlify credentials/connectors are unavailable. This change has not been merged or deployed; publish through the existing GitHub-connected Netlify project after review.
+
 ## Hosted resource budget (19 October 2026)
 
 PR #14 passed CI and published as `cf85466` in deploy `6ad5bbc214442e35bbd39fd9`. A weekday read-only check passed account/business checks but failed at calendar navigation with `incomplete_fetch`; Netlify reported 1016 MB peak memory and 88 seconds. Memory pressure is suspected, not confirmed. The server browser now skips images, media and fonts while allowing documents, styles, scripts and application data. Imports remain disabled; hosted acceptance and restricted staff access are outstanding.

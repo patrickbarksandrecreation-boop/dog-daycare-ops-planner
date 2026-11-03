@@ -2,6 +2,12 @@
 
 Prepared 11 October 2026 against approved main `45e1b88`. Release approved by the owner on 11 October. The new migration is applied as cloud version `20261011092203`; `replace-dog-photo` version 1 is active with JWT verification enabled. The unchanged metadata migration was not replayed.
 
+## Automatic compression (4 November 2026)
+
+New and replacement photos are prepared before uploading: up to 1,024 pixels on the longest side, WebP quality 78%, EXIF rotation applied and transparency retained. Originals up to 8 MB remain accepted. Small photos retain their encoding when conversion would increase size. Failed decoding stops the save before upload.
+
+For explicit-date maintenance, run `scripts/compress-day-photos.mjs` with public Supabase configuration, `PLANNER_STAFF_SESSION_FILE` pointing to an uncommitted authenticated staff session JSON, and `PLANNER_PHOTO_DATE=YYYY-MM-DD`. It is a dry-run unless `PLANNER_COMPRESS_CONFIRM` equals that date. This updates the master photo shared across dates through the existing checked replacement/cleanup workflow.
+
 ## Behaviour
 
 Group tiles show a photo/initials, readable short name, optional breed abbreviation, attendance and existing warnings/markers. The grid adapts to lane width; desktop has five columns per group and 390px mobile has two. Grip drag, card selection, hold/right-click/double-click information, keyboard controls, reorder, independent attendance and planned/present counts remain.

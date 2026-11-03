@@ -1,5 +1,13 @@
 # Implementation status
 
+## Automatic photo compression (4 November 2026 Brisbane)
+
+Creation and replacement prepare photos before upload: EXIF orientation is applied, dimensions are limited to 1,024 pixels, and WebP quality is 0.78. Transparency is retained; small images are not enlarged and retain their original if encoding would increase size. The 8 MB input limit and checked replacement lifecycle remain. Invalid/undecodable photos fail before upload. UI hints explain compression; demo mode uses the same path.
+
+`scripts/compress-day-photos.mjs` provides explicit-date maintenance with staff authentication, dry-run default, three simultaneous tasks and exact-date confirmation before replacement. It only processes that day's booked dogs, skips negligible/larger results, uses expected-path checks and verifies each saved path and size. No roster/photos are committed.
+
+Validation: 114 unit/database tests, Edge type checking, production build and four focused Chromium tests passed: creation/replacement UI plus both upload paths, EXIF rotation, significant byte reduction, transparency, small dimensions and corrupt-image rejection. Physical phone testing remains unverified. The requested live 4 November batch is reported separately when complete.
+
 ## Mobile Unassigned navigation fix
 
 Prepared on `fix/mobile-unassigned-navigation` from current main `deade50`. Phone Unassigned cards are now full-width vertical rows with 44px information/arrival targets and no touch drag grips. **View all unassigned** or the Unassigned tab expands the list into normal page scrolling. View tabs wrap, and the existing selection/destination chooser remains reachable. Desktop layout and assignment/attendance data handling are unchanged. [Production-preview screenshot](screenshots/unassigned-expanded-mobile.png).

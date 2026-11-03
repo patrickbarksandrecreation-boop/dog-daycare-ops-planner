@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Dog, Profile, Snapshot } from './model';
-import { photoError } from './model';
+import { preparePhoto } from './photos';
 import type { Repository, BookingSync } from './repository';
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -132,8 +132,7 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
       const id = dog.id || crypto.randomUUID();
       let path = dog.photo_path || null;
       if (photo) {
-        const validation = photoError(photo);
-        if (validation) throw new Error(validation);
+        photo = await preparePhoto(photo);
         const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[photo.type];
         const workspace = await rpc<string>('current_workspace');
         if (!workspace) throw new Error('Workspace membership is required.');
@@ -146,7 +145,7 @@ export function cloudRepository(db: SupabaseClient = client!): Repository {
       await rpc('save_dog', { p_id: id, p_name: dog.name, p_photo: path, p_archived: dog.is_archived || false, p_breed: dog.breed?.trim() || null });
     },
     async replacePhoto(dog, photo) {
-      const validation = photoError(photo); if (validation) throw new Error(validation);
+      photo = await preparePhoto(photo);
       const body = new FormData(); body.set('dogId', dog.id); body.set('expectedPath', dog.photo_path || ''); body.set('photo', photo);
       const { data, error } = await db.functions.invoke('replace-dog-photo', { body });
       if (error) {

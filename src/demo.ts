@@ -1,5 +1,6 @@
+import { preparePhoto } from './photos';
 import type { Assignment, Dog, Snapshot } from './model';
-import { lane, todayBrisbane, runs, photoError } from './model';
+import { lane, todayBrisbane, runs } from './model';
 import type { Repository } from './repository';
 import { demoNotes, demoRules } from './behaviour';
 import type { InteractionRule } from './behaviour';
@@ -208,6 +209,7 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
       Object.assign(group, { run, run_version: version + 1 }); changed(date);
     },
     async saveDog(input, photo) {
+      if (photo) photo = await preparePhoto(photo);
       const existing = dogs.find(d => d.id === input.id);
       const dog: Dog = { id: input.id || crypto.randomUUID(), name: input.name.trim(), photo_path: null,
         handling_notes: existing?.handling_notes || '', notes_version: existing?.notes_version || 1,
@@ -218,7 +220,7 @@ export function demoRepository(scenario: DemoScenario = 'morning'): Repository {
       changed();
     },
     async replacePhoto(input, photo) {
-      const error = photoError(photo); if (error) throw new Error(error);
+      photo = await preparePhoto(photo);
       const dog = dogs.find(d => d.id === input.id);
       if (!dog || dog.photo_url !== input.photo_url) throw new Error('Photo changed. Refresh and try again.');
       if (dog.photo_url?.startsWith('blob:')) URL.revokeObjectURL(dog.photo_url);

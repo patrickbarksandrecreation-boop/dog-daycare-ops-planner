@@ -43,8 +43,9 @@ try {
   }
   console.log('Verified encrypted session saved. No bookings imported. Netlify must still pass its own read-only verification before activation.');
 } catch(error) {
-  const code=['login_required','incomplete_fetch','identity_review'].includes(error.code)?error.code:'setup_failed';
+  const code=['login_required','incomplete_fetch','identity_review','ai_unavailable'].includes(error.code)?error.code:'setup_failed';
   console.error(`Session setup did not complete during ${stage} (${code}); no plaintext session was saved.`);
   process.exitCode=1;
 }
 finally {await browser?.close();}
+

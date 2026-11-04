@@ -1,5 +1,13 @@
 # Implementation status
 
+## AI sync published; hosted login renewal required (4 November 2026 Brisbane)
+
+PR #18 is merged as `31a98c0` and Netlify production publication was verified. The final branch `bb616d4` passed all 128 unit/PostgreSQL tests, 55 Chromium tests, type/build checks, packaged Chromium, function bundles and PWA. The AI migration is installed as cloud version `20261104063313`; the production API key is present with Functions scope, without revealing it.
+
+The post-publish read-only job `dd583655-5cf6-43f4-8576-e2e6019aa9c1` executed on Netlify and finished at 16:55:53 Brisbane with `login_required`. Hosted logs identify **calendar navigation**, after successful session decryption and browser launch: Petboost did not accept the saved login. The function reported 13 seconds and 611 MB. No bookings or attendance were imported and no Terra call was reached. API model access and complete hosted read acceptance remain unverified.
+
+Next: renew the hosted worker's Petboost login with the trusted desktop session-seeding helper, then run a new correlated read-only verification. A ChatGPT cloud-browser login is not the worker's login. Sync remains disabled; the existing workplace-admission guard is unchanged. Later production deploys skip the already attempted verification ID.
+
 ## AI sync release preparation (4 November 2026 Brisbane)
 
 GitHub CI passed all 124 unit/PostgreSQL tests, 55 Chromium tests, production/Edge checks, packaged Chromium, Netlify function bundles and PWA on `fd69ea7`. The additive AI migration is installed as cloud version `20261104063313`; execution is service-only and sync remains disabled. The owner saved the production API key; its Functions scope and secret setting were verified without revealing the value.

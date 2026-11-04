@@ -1,5 +1,13 @@
 # Implementation status
 
+## AI Petboost sync replacement (4 November 2026 Brisbane)
+
+Replaces the legacy per-appointment scraper and persistent Linux worker with one Responses API reconciliation call to `gpt-6.1-terra`, reasoning `low`, per sync. The two full rendered lists supply stable booking/profile IDs; strict output/evidence checks and a second read reject omitted, invented or changing records. Daycare, Orientation Day and bus bookings are included. The existing Netlify dispatch/schedule, encrypted sessions and leased atomic importer are retained.
+
+The additive `petboost_ai_arrivals` migration adds a service-only AI importer: verified Expected arrivals become Present with version/history/Realtime updates. Existing timestamps, departures, manual removals, profiles, groups and ordering survive. Missing bookings become inactive cancellation/review flags. Group-moving logic is explicitly outside this function, per the owner's clarification. Legacy hosted verification is invalidated by the migration; imports are not activated.
+
+Validation: all 124 unit/PostgreSQL tests, production build and Edge type checks passed. Current signed-in Petboost UI/ID attributes were inspected read-only. Browser fixture tests were updated, but local browser execution is blocked: Chromium download returned invalid archives and the packaged serverless runtime fails with `EINVAL` on font directory ownership. No real API call was made because this environment has no `OPENAI_API_KEY`. No migration, merge, deployment or live sync was performed. Next: review CI and change, configure the server-only API key, apply the additive migration and pass hosted read-only Terra verification before enabling imports. Historical Petboost entries below describe the superseded approach.
+
 ## Automatic photo compression (4 November 2026 Brisbane)
 
 Creation and replacement prepare photos before upload: EXIF orientation is applied, dimensions are limited to 1,024 pixels, and WebP quality is 0.78. Transparency is retained; small images are not enlarged and retain their original if encoding would increase size. The 8 MB input limit and checked replacement lifecycle remain. Invalid/undecodable photos fail before upload. UI hints explain compression; demo mode uses the same path.
@@ -171,3 +179,4 @@ Revalidated on Windows: all 63 unit/database tests, 15 Chromium tests, Edge type
 The same hosted acceptance test passed again on the production Netlify origin with synthetic dog `03bee181-c3ec-4407-a306-8a83f5205ec6`. Updated PR CI also passed: https://github.com/patrickbarksandrecreation-boop/dog-daycare-ops-planner/actions/runs/38128325948. Configured build passed with the existing 545 kB bundle warning.
 
 Physical-phone capture, multiple physical devices and real-photo recognition remain unverified. Hosted transport failure/ambiguous-response injection remains locally covered only. Cleanup retries on replacement or explicit staff cleanup calls; no scheduler is installed and unrelated/pre-feature orphan objects are not swept. See [DOG-CARDS-PHOTOS.md](DOG-CARDS-PHOTOS.md) for release order, permissions, cleanup and limitations.
+

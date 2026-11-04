@@ -139,3 +139,55 @@ it('preserves a staff removal that happened before the first import',async()=>{
   const s=await snapshot(); await q('select public.remove_assignment($1,$2,1)',[day,s.assignments[0].id]);
   await apply([row()]); expect((await snapshot()).assignments).toHaveLength(0);
 });
+
+
+async function applyAI(rows:any[],extra:Record<string,unknown>={},token?:string) {
+  token ||= await claim();
+  return q('select public.apply_petboost_ai_sync($1,$2,$3::jsonb)',[workspace,token,JSON.stringify({
+    date,complete:true,expectedCount:rows.length,observedCount:rows.length,fetchedAt:new Date().toISOString(),
+    readerVersion:2,model:'gpt-6.1-terra',reasoning:'low',bookings:rows,...extra,
+  })]);
+}
+async function nextRequest() {
+  await role();await q('update public.petboost_sync set requested_at=null,claimed_request_at=null where workspace_id=$1',[workspace]);
+}
+it('AI sync marks verified arrivals present without assigning new dogs or moving existing groups',async()=>{
+  await apply([row()]);let s=await snapshot();
+  await q('select public.move_assignment($1,$2,$3,null,1)',[day,s.assignments[0].id,s.groups[0].group_id]);
+  s=await snapshot();const before=s.assignments[0];
+  await nextRequest();await applyAI([{...row(),arrived:true},{...row('c','d','New Synthetic'),arrived:true}]);
+  s=await snapshot();
+  const existing=s.assignments.find((a:any)=>a.id===before.id),added=s.assignments.find((a:any)=>a.id!==before.id);
+  expect(existing.group_id).toBe(before.group_id);expect(existing.sort_order).toBe(before.sort_order);
+  expect(existing.attendance_status).toBe('present');expect(existing.version).toBe(before.version+1);
+  expect(added.group_id).toBeNull();expect(added.attendance_status).toBe('present');
+  expect(existing.arrived_at).toBeTruthy();
+  await role();expect((await q("select event_type from public.movement_events where workspace_id=$1 and event_type='attendance'",[workspace]))).toHaveLength(2);
+});
+it('AI repeats preserve arrival timestamps, manual attendance, departures and group/order/version',async()=>{
+  await applyAI([{...row(),arrived:true}]);let s=await snapshot();const before=s.assignments[0];
+  await nextRequest();await applyAI([{...row(),arrived:false}]);
+  expect((await snapshot()).assignments[0]).toEqual(before);
+  await q("select public.set_attendance($1,$2,'departed',$3)",[day,before.id,before.version]);
+  const departed=(await snapshot()).assignments[0];
+  await nextRequest();await applyAI([{...row(),arrived:true}]);
+  expect((await snapshot()).assignments[0]).toEqual(departed);
+});
+it('AI rejects legacy/wrong-model/missing-arrival payloads atomically and is inaccessible to frontend roles',async()=>{
+  await expect(q('select public.apply_petboost_ai_sync($1,$2,$3::jsonb)',[workspace,crypto.randomUUID(),'{}'])).rejects.toThrow('permission denied');
+  const token=await claim();
+  for(const [rows,extra] of [
+    [[row()],{}],[[{...row(),arrived:'true'}],{}],[[{...row(),arrived:null}],{}],
+    [[{...row(),arrived:true}],{readerVersion:1}],[[{...row(),arrived:true}],{model:'other'}],
+    [[{...row(),arrived:true}],{reasoning:'high'}],
+  ] as [any[],Record<string,unknown>][])await expect(applyAI(rows,extra,token)).rejects.toThrow();
+  expect((await snapshot()).assignments).toEqual([]);
+});
+it('AI does not re-add manually removed dogs, resets no attendance and marks absent source bookings cancelled for review',async()=>{
+  await applyAI([{...row(),arrived:false}]);let s=await snapshot();
+  await q('select public.remove_assignment($1,$2,1)',[day,s.assignments[0].id]);
+  await nextRequest();await applyAI([{...row(),arrived:true}]);expect((await snapshot()).assignments).toEqual([]);
+  await nextRequest();await applyAI([]);await role();
+  expect((await q('select active from public.petboost_bookings where workspace_id=$1',[workspace]))[0].active).toBe(false);
+  expect((await snapshot()).dogs).toHaveLength(1);
+});

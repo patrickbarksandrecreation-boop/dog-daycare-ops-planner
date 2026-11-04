@@ -6,6 +6,7 @@ const messages: Record<string,string> = {
   login_required: 'Petboost login needs renewing on the sync worker.',
   incomplete_fetch: 'Petboost returned an incomplete or changing list. No bookings were imported.',
   identity_review: 'A dog identity needs linking or an archived dog needs review. No bookings were imported.',
+  ai_unavailable: 'AI booking sync is unavailable. Check the server API key, model access and API status. The existing board is preserved.',
   worker_error: 'Booking sync failed. Check the sync worker; the existing board is preserved.',
 };
 export function BookingSync({ repo, date, dogs, editable, refresh }: {
@@ -60,3 +61,4 @@ export function BookingSync({ repo, date, dogs, editable, refresh }: {
     {!!sync?.missingDogIds.length && <p role="alert">Cancelled or no longer in Petboost’s latest list — review: {sync.missingDogIds.map(id=>dogs.find(d=>d.id===id)?.name || 'Dog unavailable').join(', ')}. Their day records and staff changes are retained.</p>}
   </section>;
 }
+

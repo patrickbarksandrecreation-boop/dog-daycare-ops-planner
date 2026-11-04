@@ -5,7 +5,7 @@ import {seal,unseal} from '../scripts/petboost/session-crypto.mjs';
 // @ts-expect-error server-only Node ESM
 import {enabled,internalAuth,dispatch,runNetlify,deploymentEnv} from '../scripts/petboost/netlify-runtime.mjs';
 const secret=randomBytes(32).toString('base64');
-const env={CONTEXT:'production',PETBOOST_SYNC_ENABLED:'true',PETBOOST_WORKSPACE_ID:'synthetic',PETBOOST_BUSINESS_BUTTON:'Synthetic Enterprise',SUPABASE_URL:'https://synthetic.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'synthetic-server-key',PETBOOST_SESSION_KEY:secret,PETBOOST_DISPATCH_SECRET:'x'.repeat(40),URL:'https://synthetic.netlify.app'};
+const env={CONTEXT:'production',PETBOOST_SYNC_ENABLED:'true',PETBOOST_WORKSPACE_ID:'synthetic',PETBOOST_BUSINESS_BUTTON:'Synthetic Enterprise',SUPABASE_URL:'https://synthetic.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'synthetic-server-key',PETBOOST_SESSION_KEY:secret,PETBOOST_DISPATCH_SECRET:'x'.repeat(40),URL:'https://synthetic.netlify.app',OPENAI_API_KEY:'synthetic-api-key'};
 const binding='synthetic:Synthetic Enterprise';
 const state={cookies:[{name:'synthetic-cookie',value:'synthetic-private-value'}],origins:[]};
 function fixture(errorCode?:string) {
@@ -40,7 +40,7 @@ it('disables previews and requires the internal dispatch secret before worker in
 });
 it('restores encrypted session, saves refreshed state under the lease, then imports exactly once',async()=>{
   const f=fixture();expect(await runNetlify({...f,env})).toEqual({status:'success'});
-  expect(f.calls.map(c=>c.name)).toEqual(['claim_petboost_sync','read_petboost_session','save_petboost_session','apply_petboost_sync']);
+  expect(f.calls.map(c=>c.name)).toEqual(['claim_petboost_sync','read_petboost_session','save_petboost_session','apply_petboost_ai_sync']);
   expect(f.calls[2].args.p_run).toBe('synthetic-run');expect(f.calls[2].args.p_state).not.toContain('synthetic-private-value');expect(f.close).toHaveBeenCalledOnce();
 });
 it('records session expiry without applying an empty snapshot or replacing saved state',async()=>{
@@ -77,5 +77,16 @@ it('reports only fixed diagnostic stages and sanitized errors without session da
   };
   expect(await runNetlify({...f,reader,env,verifyOnly:true,onDiagnostic})).toEqual({status:'worker_error'});
   expect(onDiagnostic).toHaveBeenCalledWith({stage:'calendar total',code:'worker_error'});
-  expect(f.calls.some(c=>c.name==='apply_petboost_sync')).toBe(false);
+  expect(f.calls.some(c=>c.name==='apply_petboost_ai_sync')).toBe(false);
+});
+
+it('records missing AI configuration before restoring a session or launching a browser',async()=>{
+  const f=fixture();expect(await runNetlify({...f,env:{...env,OPENAI_API_KEY:''}})).toEqual({status:'ai_unavailable'});
+  expect(f.calls.map(c=>c.name)).toEqual(['claim_petboost_sync','fail_petboost_sync']);
+  expect(f.launch).not.toHaveBeenCalled();
+});
+it('passes the AI configuration and abort signal to the reader and does not import on provider failure',async()=>{
+  const f=fixture('ai_unavailable');expect(await runNetlify({...f,env})).toEqual({status:'ai_unavailable'});
+  expect((f.reader.mock.calls[0] as any)[2]).toMatchObject({env,signal:expect.any(AbortSignal)});
+  expect(f.calls.some(c=>c.name==='apply_petboost_ai_sync')).toBe(false);
 });

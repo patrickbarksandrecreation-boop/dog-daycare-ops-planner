@@ -115,6 +115,7 @@ The manifest, icons and service worker support Android installation from HTTPS. 
 
 ## Future imports
 
-Use the repository/service boundary for staged CSV validation, manager review and a stable `(source,external_id)` → dog UUID mapping. Never match records solely by name. Importing the master database must not imply a booking or physical arrival. Future booking imports must use the existing per-day uniqueness constraint and initialise Expected without resetting existing attendance. Do not implement Petboost until its integration is separately specified.
+Use the repository/service boundary for staged CSV validation, manager review and a stable `(source,external_id)` → dog UUID mapping. Never match records solely by name. Importing the master database must not imply a booking or physical arrival. Booking imports use the per-day uniqueness constraint and initialise Expected without resetting existing attendance. The specified AI Petboost booking/arrival sync is documented in [PETBOOST-SYNC.md](docs/PETBOOST-SYNC.md); group changes are a separate function.
 
 See [FUTURE_FEATURES.md](FUTURE_FEATURES.md) for deferred work.
+

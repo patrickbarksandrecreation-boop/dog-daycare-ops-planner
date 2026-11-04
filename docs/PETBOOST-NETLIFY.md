@@ -27,3 +27,7 @@ Two UTC cron dispatchers preserve Brisbane weekdays at 06:30–11:30 hourly (`30
 The earlier hosted deterministic reader failed near the 1 GB memory limit. The new bulk-list read avoids per-appointment navigation, but this does not prove hosted memory/login/model acceptance. Check the actual hosted job before activation. No plan change or new subscription is implied or performed.
 
 OpenAI API token charges, Netlify compute and Supabase usage are separate. This change makes no fixed cost/runtime promise. Setup/read-only verification also invokes the model. Physical-phone and unattended delivery checks remain distinct from synthetic tests.
+
+## Owner-requested post-deploy check
+
+The local `petboost-verify` build plugin dispatches the protected read-only endpoint from `onSuccess`, after production publication. It uses the existing build-scoped server settings inside Netlify; no keys are copied into chat, local files, browser code or logs. Preview/local/other-branch builds skip it. The fixed `verification_id` in `netlify.toml` is a correlation ID, not a credential; after that ID has acquired the DB verification lease, later deploys skip it. A fresh owner-requested check can use a new ID. Dispatch acknowledgement is not verification success: inspect the correlated database result and hosted logs. The plugin never enables sync or imports bookings.

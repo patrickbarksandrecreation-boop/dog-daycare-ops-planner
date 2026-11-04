@@ -41,3 +41,10 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Runs only after production publication; dispatches the existing protected
+# read-only check using server-side secrets, never a browser-visible key.
+[[plugins]]
+  package = "./netlify/plugins/petboost-verify"
+  [plugins.inputs]
+    verification_id = "dd583655-5cf6-43f4-8576-e2e6019aa9c1"

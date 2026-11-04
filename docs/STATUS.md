@@ -1,5 +1,11 @@
 # Implementation status
 
+## AI sync release preparation (4 November 2026 Brisbane)
+
+GitHub CI passed all 124 unit/PostgreSQL tests, 55 Chromium tests, production/Edge checks, packaged Chromium, Netlify function bundles and PWA on `fd69ea7`. The additive AI migration is installed as cloud version `20261104063313`; execution is service-only and sync remains disabled. The owner saved the production API key; its Functions scope and secret setting were verified without revealing the value.
+
+A local build plugin now dispatches the existing protected read-only verification after successful production publication, using Netlify's existing server environment. Its fixed correlation ID is skipped after the request acquires the DB lease; previews and local builds cannot invoke it. This avoids moving server secrets out of hosting. Focused tests cover guards, dispatch, replay suppression and sanitized failure behavior. Hosted read/model acceptance is still pending; the existing open-pilot admission guard remains unchanged.
+
 ## AI Petboost sync replacement (4 November 2026 Brisbane)
 
 Replaces the legacy per-appointment scraper and persistent Linux worker with one Responses API reconciliation call to `gpt-6.1-terra`, reasoning `low`, per sync. The two full rendered lists supply stable booking/profile IDs; strict output/evidence checks and a second read reject omitted, invented or changing records. Daycare, Orientation Day and bus bookings are included. The existing Netlify dispatch/schedule, encrypted sessions and leased atomic importer are retained.

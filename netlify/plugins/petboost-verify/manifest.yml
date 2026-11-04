@@ -1,0 +1,5 @@
+name: netlify-plugin-petboost-verification
+inputs:
+  - name: verification_id
+    description: Fixed correlation ID for one owner-requested read-only verification.
+    required: true

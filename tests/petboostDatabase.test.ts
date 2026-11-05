@@ -191,3 +191,30 @@ it('AI does not re-add manually removed dogs, resets no attendance and marks abs
   expect((await q('select active from public.petboost_bookings where workspace_id=$1',[workspace]))[0].active).toBe(false);
   expect((await snapshot()).dogs).toHaveLength(1);
 });
+it('requires service-only issuance and consumes the expiring reconnect code once with no planner changes',async()=>{
+  const hash='a'.repeat(64);
+  await expect(q('select public.prepare_petboost_session_setup($1,$2,30)',[workspace,hash])).rejects.toThrow('permission denied');
+  await expect(q('select public.check_petboost_session_setup($1,$2)',[workspace,hash])).rejects.toThrow('permission denied');
+  await expect(q('select * from public.petboost_session_setup')).rejects.toThrow('permission denied');
+  const before=await snapshot();await role('service_role');
+  await q('select public.prepare_petboost_session_setup($1,$2,30)',[workspace,hash]);
+  expect((await q('select public.check_petboost_session_setup($1,$2) valid',[workspace,hash]))[0].valid).toBe(true);
+  expect((await q('select public.check_petboost_session_setup($1,$2) valid',[workspace,'b'.repeat(64)]))[0].valid).toBe(false);
+  await q('select public.complete_petboost_session_setup($1,$2,$3)',[workspace,hash,'Synthetic encrypted reconnect envelope']);
+  expect((await q('select public.read_petboost_session($1) s',[workspace]))[0].s).toBe('Synthetic encrypted reconnect envelope');
+  expect((await q('select public.check_petboost_session_setup($1,$2) valid',[workspace,hash]))[0].valid).toBe(false);
+  await expect(q('select public.complete_petboost_session_setup($1,$2,$3)',[workspace,hash,'Synthetic replay envelope'])).rejects.toThrow('missing or expired');
+  expect((await snapshot()).assignments).toEqual(before.assignments);
+});
+it('rejects expired reconnect codes, invalid issuance and cross-workspace use without replacing the prior login',async()=>{
+  const hash='a'.repeat(64);await role('service_role');
+  await q('select public.save_petboost_session($1,$2,null)',[workspace,'Synthetic existing encrypted login']);
+  await expect(q('select public.prepare_petboost_session_setup($1,$2,61)',[workspace,hash])).rejects.toThrow('Invalid reconnect');
+  await expect(q('select public.prepare_petboost_session_setup($1,$2,30)',[workspace,'bad-hash'])).rejects.toThrow('Invalid reconnect');
+  await q('select public.prepare_petboost_session_setup($1,$2,30)',[workspace,hash]);
+  expect((await q('select public.check_petboost_session_setup($1,$2) valid',[crypto.randomUUID(),hash]))[0].valid).toBe(false);
+  await role();await q("update public.petboost_session_setup set expires_at=now()-interval '1 minute' where workspace_id=$1",[workspace]);
+  await role('service_role');
+  await expect(q('select public.complete_petboost_session_setup($1,$2,$3)',[workspace,hash,'Synthetic outdated login'])).rejects.toThrow('missing or expired');
+  expect((await q('select public.read_petboost_session($1) s',[workspace]))[0].s).toBe('Synthetic existing encrypted login');
+});

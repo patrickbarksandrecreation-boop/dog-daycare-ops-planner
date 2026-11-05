@@ -1,5 +1,11 @@
 # Implementation status
 
+## One-use desktop Petboost reconnect (5 November 2026 Brisbane)
+
+Adds `connect-session.mjs` and a production-only reconnect endpoint so the trusted desktop needs no `.env.petboost-setup` or copies of Netlify's write-only production secrets. An owner/service-issued 256-bit code is stored only as a SHA-256 hash, expires within 60 minutes and can replace the encrypted worker login once. Public/anonymous/staff roles cannot issue or inspect codes. Session replacement and code consumption are atomic; renewal invalidates prior verification and fences older workers. No endpoint returns the saved session or server keys.
+
+The helper uses a fresh installed Edge/Chrome context, verifies the business, retains only Petboost/Auth0 origins and uploads in memory over the fixed HTTPS planner endpoint. The server bounds and validates input, encrypts with the existing server key, and queues the existing protected read-only verification after successful saving. No bookings, groups or attendance are written by reconnect. Production deployment and the user's actual reconnect are recorded separately when confirmed.
+
 ## AI sync published; hosted login renewal required (4 November 2026 Brisbane)
 
 PR #18 is merged as `31a98c0` and Netlify production publication was verified. The final branch `bb616d4` passed all 128 unit/PostgreSQL tests, 55 Chromium tests, type/build checks, packaged Chromium, function bundles and PWA. The AI migration is installed as cloud version `20261104063313`; the production API key is present with Functions scope, without revealing it.
@@ -193,4 +199,5 @@ Revalidated on Windows: all 63 unit/database tests, 15 Chromium tests, Edge type
 The same hosted acceptance test passed again on the production Netlify origin with synthetic dog `03bee181-c3ec-4407-a306-8a83f5205ec6`. Updated PR CI also passed: https://github.com/patrickbarksandrecreation-boop/dog-daycare-ops-planner/actions/runs/38128325948. Configured build passed with the existing 545 kB bundle warning.
 
 Physical-phone capture, multiple physical devices and real-photo recognition remain unverified. Hosted transport failure/ambiguous-response injection remains locally covered only. Cleanup retries on replacement or explicit staff cleanup calls; no scheduler is installed and unrelated/pre-feature orphan objects are not swept. See [DOG-CARDS-PHOTOS.md](DOG-CARDS-PHOTOS.md) for release order, permissions, cleanup and limitations.
+
 

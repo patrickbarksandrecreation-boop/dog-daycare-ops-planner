@@ -31,3 +31,13 @@ OpenAI API token charges, Netlify compute and Supabase usage are separate. This 
 ## Owner-requested post-deploy check
 
 The local `petboost-verify` build plugin dispatches the protected read-only endpoint from `onSuccess`, after production publication. It uses the existing build-scoped server settings inside Netlify; no keys are copied into chat, local files, browser code or logs. Preview/local/other-branch builds skip it. The fixed `verification_id` in `netlify.toml` is a correlation ID, not a credential; after that ID has acquired the DB verification lease, later deploys skip it. A fresh owner-requested check can use a new ID. Dispatch acknowledgement is not verification success: inspect the correlated database result and hosted logs. The plugin never enables sync or imports bookings.
+
+## Reconnect without a local production secrets file
+
+Use `scripts/petboost/connect-session.mjs` with an owner-issued `PETBOOST_SETUP_TOKEN` when `.env.petboost-setup` is unavailable. The existing direct seed helper remains available for trusted desktops that already have their private configuration.
+
+The reconnect helper uses the installed Edge browser on Windows (Chrome otherwise), a fresh in-memory browser context, the fixed HTTPS planner endpoint and the exact business name supplied by that endpoint. The user signs in locally. Only Petboost/Auth0 cookies and storage are sent over HTTPS; no plaintext session file is written. The server encrypts the state with its existing key. Supabase, encryption, dispatch and OpenAI keys remain on Netlify.
+
+An owner/service issues a random 32-byte hex code, saves only its SHA-256 hash through `prepare_petboost_session_setup` and gives the one-use value to the operator privately. Codes expire in at most 60 minutes. Anonymous/signed-in frontend roles cannot mint, inspect or consume these database capabilities directly. The public endpoint requires the matching bearer code; it is disabled outside published production. Invalid, expired, consumed, cross-workspace and oversized requests cannot replace a session. The replacement and code consumption share a transaction, invalidate old verification and fence older workers.
+
+After successful upload the endpoint dispatches the existing protected read-only hosted test, returning its non-secret verification ID. A failed dispatch does not turn a successful upload into a retryable token: the owner can request verification separately. Reconnect never enables sync or imports dogs. Issuing a new code invalidates the previous code; tokens, login states and production secrets must never be committed or logged.

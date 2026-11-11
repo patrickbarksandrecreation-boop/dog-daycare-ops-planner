@@ -35,11 +35,14 @@ test('worker browser performs synthetic email/password/OTP login, saves only enc
         route:async(pattern:string,handler:any)=>context.route(pattern,(route:any)=>handler({request:()=>route.request(),abort:()=>route.abort(),continue:async()=>{
           const u=new URL(route.request().url()),path=u.pathname;
           if(route.request().method()==='POST')posted.push(route.request().postData()||'');
-          if(u.hostname==='business.petboost.com' && path==='/')return route.fulfill({status:302,headers:{location:'https://petboost-business.au.auth0.com/u/login'}});
+          // Playwright does not re-route the later requests in an HTTP redirect
+          // chain. Use a document navigation so every fixture request remains
+          // intercepted; never send the synthetic flow to the real provider.
+          if(u.hostname==='business.petboost.com' && path==='/')return route.fulfill({contentType:'text/html',body:'<script>location.replace("https://petboost-business.au.auth0.com/u/login")</script>'});
           if(path==='/u/login')return route.fulfill({contentType:'text/html',body:form('<input name="username" type="email" required>','/u/login/password')});
           if(path==='/u/login/password')return route.fulfill({contentType:'text/html',body:form('<input name="password" type="password" required>','/u/login/code')});
           if(path==='/u/login/code')return route.fulfill({contentType:'text/html',body:form('<input name="code" autocomplete="one-time-code" required>','/u/login/finish')});
-          if(path==='/u/login/finish')return route.fulfill({status:302,headers:{location:'https://business.petboost.com/mission-control'}});
+          if(path==='/u/login/finish')return route.fulfill({contentType:'text/html',body:'<script>location.replace("https://business.petboost.com/mission-control")</script>'});
           if(path==='/mission-control')return route.fulfill({contentType:'text/html',body:'<button>Synthetic Enterprise</button>'});
           return route.abort();
         }})),

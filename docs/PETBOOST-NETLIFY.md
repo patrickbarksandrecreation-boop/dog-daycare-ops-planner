@@ -34,6 +34,18 @@ The local `petboost-verify` build plugin dispatches the protected read-only endp
 
 ## Reconnect without a local production secrets file
 
+### Reconnect from a phone
+
+Open **Reconnect Petboost** beside the planner's sync controls, or use `/petboost-reconnect.html`. An administrator issues the same one-use reconnect capability described below. A private link can put it in `#code=…`; the page immediately removes the fragment and waits for **Start secure login**. The code is never put in a query string, cookie, browser storage, access log or referrer. Reloading requires the code again.
+
+The phone shows the actual worker browser's email/password/verification-code fields as accessible native inputs. No proxy cookies, downloaded exports or phone browser extensions are needed. Only known Auth0 login fields and a fixed set of sign-in buttons can be submitted; URLs, selectors, scripts, account creation/reset controls and unrelated navigation are not accepted. Google/Apple, passkeys and CAPTCHA challenges require the desktop helper. The exact configured business is checked before saving.
+
+The existing Netlify runtime runs one fresh browser per workspace for at most six minutes, with a seven-minute database fence. `petboost-login-background` uses the existing Chromium packaging; no external browser subscription or hosting-credential change is introduced. Published-production and internal dispatch guards apply. A second start reuses the active run; duplicate background deliveries cannot claim it. Cancellation, new codes, timeout and newer runs fence old browsers atomically.
+
+Apply `20261111231453_petboost_mobile_reconnect.sql` after the existing session-reconnect migration. Its table has RLS and no direct grants, including to `service_role`; only service-only routines may access it. The public endpoint authenticates every operation with the one-use code. Browser-local input and API requests are never logged. Queued commands are encrypted to an ephemeral X25519 key held only by the live login worker, with AES-256-GCM and workspace/run/revision binding; a killed worker leaves no retained decryption key. The single queued command is consumed once and cleared on completion/cancel/expiry. The long-term session still uses the existing server-side AES-GCM key and setup-completion transaction.
+
+After saving, the page distinguishes **saved / check pending**, **saved / check failed**, and **saved and verified**, using the exact protected read-only verification ID. A dispatch acknowledgement alone never becomes verification success. Reconnect does not enable sync, import bookings, mark arrivals or move groups. Hosted browser memory/auth-provider acceptance and a physical-phone sign-in remain live release checks, separate from synthetic browser tests. Both API responses and the reconnect page are `no-store`; the service worker bypasses all reconnect files and Netlify endpoints.
+
 Use `scripts/petboost/connect-session.mjs` with an owner-issued `PETBOOST_SETUP_TOKEN` when `.env.petboost-setup` is unavailable. The existing direct seed helper remains available for trusted desktops that already have their private configuration.
 
 The reconnect helper uses the installed Edge browser on Windows (Chrome otherwise), a fresh in-memory browser context, the fixed HTTPS planner endpoint and the exact business name supplied by that endpoint. The user signs in locally. Only Petboost/Auth0 cookies and storage are sent over HTTPS; no plaintext session file is written. The server encrypts the state with its existing key. Supabase, encryption, dispatch and OpenAI keys remain on Netlify.

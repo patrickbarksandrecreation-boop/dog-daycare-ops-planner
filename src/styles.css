@@ -513,3 +513,30 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
   .lane-layout .unassigned-cards { grid-template-columns:minmax(0,1fr); }
 }
 @media(prefers-reduced-motion:reduce) { .card-saving svg { animation:none; } }
+
+
+/* Read-only, viewport-sized roster. Explicit rows keep 40 complete cards visible
+   even with the mobile browser chrome open; no browser zoom is required. */
+.group-overview-button { flex-shrink:0; min-height:44px; padding:5px 9px; font-size:11px; }
+.group-overview { position:fixed; inset:0; height:100vh; height:100dvh; display:flex; flex-direction:column; gap:4px; padding:6px; padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)); background:#f3f5f2; overflow:hidden; }
+.overview-header { flex-shrink:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:4px 8px; }
+.overview-header > button { justify-self:start; min-height:44px; padding:6px 8px; font-size:12px; white-space:nowrap; }
+.overview-group-picker { min-width:0; }
+.overview-group-picker select { min-height:44px; padding:6px; }
+.overview-summary { min-width:0; }
+.overview-summary h1 { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.overview-summary h1 span { font-weight:500; }
+.overview-summary > span { display:block; font-size:10px; line-height:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.overview-status { justify-self:end; font-size:10px; text-align:right; }
+.overview-status.offline { color:#924010; font-weight:700; }
+.overview-grid { flex:1; min-height:0; max-height:calc(var(--portrait-rows) * 90px); display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); grid-template-rows:repeat(var(--portrait-rows),minmax(0,1fr)); gap:3px; }
+.overview-card { min-width:0; min-height:0; overflow:hidden; display:grid; grid-template-rows:minmax(0,1fr) 14px 11px; gap:1px; padding:2px; border:1px solid #c9d5cc; border-radius:5px; background:var(--dog-colour,#fff); color:var(--dog-ink,#000); text-align:center; }
+.overview-card .avatar { display:flex; align-items:center; justify-content:center; justify-self:center; width:100%; height:100%; min-height:0; max-width:64px; max-height:64px; border-radius:3px; overflow:hidden; font-size:13px; background:#e0e8df; color:#244d42; }
+.overview-card .avatar img { display:block; width:100%; height:100%; object-fit:cover; }
+.overview-card > strong, .overview-card > span:last-child { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.overview-card > strong { font-size:11px; line-height:14px; }
+.overview-card > span:last-child { font-size:9px; line-height:11px; }
+.overview-empty { flex:1; display:grid; place-content:center; color:var(--muted); }
+@media (min-width:761px), (orientation:landscape) {
+  .overview-grid { max-height:calc(var(--wide-rows) * 90px); grid-template-columns:repeat(10,minmax(0,1fr)); grid-template-rows:repeat(var(--wide-rows),minmax(0,1fr)); }
+}

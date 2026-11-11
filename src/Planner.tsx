@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter,
@@ -26,6 +26,7 @@ import { PhotoEditor } from './components/PhotoEditor';
 import { BehaviourEditor } from './components/BehaviourEditor';
 import { matchesDog, shortDogNames } from './dogLabels';
 import { GroupLane } from './components/GroupLane';
+import { GroupOverview } from './components/GroupOverview';
 import { PanelResize, usePanelSizes } from './components/PanelResize';
 import { BookingSync } from './components/BookingSync';
 
@@ -88,6 +89,12 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const { snapshot: state, profile, connection, busy, pendingIds, loading, loadError, error, setError, run, refresh, editable: boardEditable } = usePlanner(repo, date);
   const editable = boardEditable && !busy;
   const [view, setView] = useState('group-1');
+  const [overview, setOverview] = useState<string | null>(null);
+  const overviewTrigger = useRef<string | null>(null);
+  const closeOverview = useCallback(() => {
+    setOverview(null);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`[data-overview-group="${overviewTrigger.current}"]`)?.focus({ preventScroll: true }));
+  }, []);
   const initialViewDate = useRef('');
   const [boardSearch, setBoardSearch] = useState('');
   const [search, setSearch] = useState('');
@@ -119,10 +126,10 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
   useEffect(() => {
-    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelection([]); };
+    const escape = (event: KeyboardEvent) => { if (event.key === 'Escape' && !overview) setSelection([]); };
     window.addEventListener('keydown', escape);
     return () => window.removeEventListener('keydown', escape);
-  }, []);
+  }, [overview]);
   useEffect(() => {
     if (state && view !== 'unassigned' && !state.groups.some(g => g.group_id === view)) setView(state.groups[0]?.group_id || 'unassigned');
   }, [state, view]);
@@ -133,7 +140,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   }, [state, date]);
   function changeDate(next: string) {
     if (!next || busy) return;
-    setDate(next); setSelection([]); setDrag(null); setRename(null); setInfoId(null);
+    setOverview(null); setDate(next); setSelection([]); setDrag(null); setRename(null); setInfoId(null);
     setHistory(false); setDatabase(false); setClearing(null); setRemoving(null); setSearch(''); setBoardSearch(''); setAlertGroup(null);
   }
   function offsetDate(amount: number) {
@@ -194,6 +201,11 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     </SortableContext>;
   }
   const shortDate = new Date(`${date}T12:00:00+10:00`).toLocaleDateString('en-AU', { timeZone: 'Australia/Brisbane', weekday: 'short', day: 'numeric', month: 'short' });
+  const overviewGroup = state?.groups.find(g => g.group_id === overview);
+  if (state && overviewGroup) return <GroupOverview group={overviewGroup} groups={state.groups}
+    dogs={lane(state.assignments, overviewGroup.group_id).map(a => dogsById.get(a.dog_id)).filter((dog): dog is Dog => !!dog)}
+    shortNames={shortNames} date={shortDate} connection={connection} loading={loading} busy={busy} demo={!!repo.demo}
+    error={error} close={closeOverview} choose={id => { overviewTrigger.current = id; setOverview(id); setView(id); }}/>;
   return <SaveError.Provider value={error}><div className="planner-shell">
     <header className="app-header">
       <div className="brand"><span className="brand-mark"><PawPrint size={21}/></span>dayboard<span className="brand-dot">.</span></div>
@@ -265,6 +277,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
                 <GroupLane id={g.group_id} name={g.displayed_name} order={g.display_order} present={c.present} planned={c.planned}
                   selected={selection.length > 0 && moveEditable} dragging={!!drag} destination={() => void moveSelected(g.group_id)}
                   rename={editable ? () => { setSelection([]); setRename(rename === g.group_id ? null : g.group_id); } : undefined}
+                  overview={() => { overviewTrigger.current = g.group_id; setView(g.group_id); setOverview(g.group_id); }}
                   warnings={[...groupConflicts(state.assignments, g.group_id, rules), ...runWarnings(state.assignments, state.dogs, g)]}
                   showWarnings={() => setAlertGroup(g.group_id)}
                   runSelector={<select className="run-select" aria-label={`Run for ${g.displayed_name}`} value={g.run || ''} disabled={!editable}

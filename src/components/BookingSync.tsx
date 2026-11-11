@@ -54,6 +54,7 @@ export function BookingSync({ repo, date, dogs, editable, refresh }: {
         catch(e) { setError(e instanceof Error?e.message:'Sync request could not be confirmed.'); }
         finally { setPending(false); }
       }}>{pending?'Requesting…':'Sync bookings'}</button>
+    {!repo.demo && <a href="/petboost-reconnect.html">Reconnect Petboost</a>}
     {error && <p role="alert">{error}</p>}
     {sync?.last_error_code && <p role="alert">{messages[sync.last_error_code] || messages.worker_error}</p>}
     {workerStale && <p role="alert">{sync?.worker_mode==='netlify' ? 'A scheduled sync has not started. Check Netlify worker logs.' : 'Sync worker is not checking in. Automatic and manual sync may be delayed.'}</p>}

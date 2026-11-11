@@ -69,6 +69,62 @@ beforeEach(async()=>{
   await role('authenticated',staff); day=(await q('select public.ensure_planning_day($1) d',[date]))[0].d;
 });
 afterAll(async()=>{await db?.close();});
+const mobileHash='e'.repeat(64);
+async function mobileStart() {
+  await role('service_role');await q('select public.prepare_petboost_session_setup($1,$2,30)',[workspace,mobileHash]);
+  const run=crypto.randomUUID(),worker=crypto.randomUUID();
+  const result=(await q("select public.petboost_mobile_request($1,$2,'start',$3) s",[workspace,mobileHash,run]))[0].s;
+  await q("select public.petboost_mobile_worker($1,$2,$3,'claim',$4::jsonb)",[workspace,run,worker,JSON.stringify({publicKey:'synthetic-public-key'.repeat(4)})]);
+  return {run,worker,result};
+}
+it('keeps mobile reconnect service-only and makes starts and worker claims idempotent',async()=>{
+  const {run,worker,result}=await mobileStart();expect(result.created).toBe(true);
+  const next=(await q("select public.petboost_mobile_request($1,$2,'start',$3) s",[workspace,mobileHash,crypto.randomUUID()]))[0].s;
+  expect(next.run).toBe(run);expect(next.created).toBe(false);
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'claim',$4::jsonb) s",[workspace,run,worker,JSON.stringify({publicKey:'x'.repeat(60)})]))[0].s).toBeNull();
+  for(const name of ['anon','authenticated']){
+    await role(name,staff);await expect(q('select * from public.petboost_mobile_logins')).rejects.toThrow('permission denied');
+    await expect(q("select public.petboost_mobile_request($1,$2,'read',$3)",[workspace,mobileHash,run])).rejects.toThrow('permission denied');
+    await expect(q("select public.petboost_mobile_worker($1,$2,$3,'take')",[workspace,run,worker])).rejects.toThrow('permission denied');
+  }
+});
+it('queues one encrypted action for the current form and prevents replay or overwriting an in-flight action',async()=>{
+  const {run,worker}=await mobileStart();
+  await q("select public.petboost_mobile_worker($1,$2,$3,'publish',$4::jsonb)",[workspace,run,worker,'{"fields":[],"buttons":[]}']);
+  const send=()=>q("select public.petboost_mobile_request($1,$2,'command',$3,1,$4) s",[workspace,mobileHash,run,'Synthetic encrypted command envelope']);
+  expect((await send())[0].s.status).toBe('busy');expect((await send())[0].s.conflict).toBe(true);
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'publish','{}') s",[workspace,run,worker]))[0].s.pending).toBe(true);
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'take') s",[workspace,run,worker]))[0].s.command).toBe('Synthetic encrypted command envelope');
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'take') s",[workspace,run,worker]))[0].s.command).toBeNull();
+  await q("select public.petboost_mobile_worker($1,$2,$3,'publish','{}')",[workspace,run,worker]);
+  expect((await send())[0].s.conflict).toBe(true);
+});
+it('fences cancelled, expired, superseded and incorrectly claimed browsers before they can replace a session',async()=>{
+  let {run,worker}=await mobileStart();
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'take') s",[workspace,run,crypto.randomUUID()]))[0].s).toBeNull();
+  await q("select public.petboost_mobile_request($1,$2,'cancel',$3)",[workspace,mobileHash,run]);
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'finish',null,$4,$5) s",[workspace,run,worker,'Synthetic encrypted session',crypto.randomUUID()]))[0].s).toBeNull();
+  ({run,worker}=await mobileStart());
+  await q('select public.prepare_petboost_session_setup($1,$2,30)',[workspace,'f'.repeat(64)]);
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'take') s",[workspace,run,worker]))[0].s).toBeNull();
+  ({run,worker}=await mobileStart());
+  await role();await q("update public.petboost_mobile_logins set expires_at=clock_timestamp()-interval '1 second',command='Synthetic encrypted pending command' where workspace_id=$1",[workspace]);
+  await role('service_role');expect((await q("select public.petboost_mobile_worker($1,$2,$3,'take') s",[workspace,run,worker]))[0].s).toBeNull();
+  await role();const expired=(await q('select status,command from public.petboost_mobile_logins where workspace_id=$1',[workspace]))[0];
+  expect(expired).toEqual({status:'expired',command:null});
+});
+it('atomically saves the mobile login once, clears transient fields, fences old workers and never enables imports',async()=>{
+  await role();await q('update public.petboost_sync set enabled=false where workspace_id=$1',[workspace]);
+  const {run,worker}=await mobileStart(),verification=crypto.randomUUID();
+  await q("select public.petboost_mobile_worker($1,$2,$3,'finish',null,$4,$5)",[workspace,run,worker,'Synthetic encrypted renewed session',verification]);
+  expect((await q('select public.read_petboost_session($1) s',[workspace]))[0].s).toBe('Synthetic encrypted renewed session');
+  expect((await q('select public.check_petboost_session_setup($1,$2) s',[workspace,mobileHash]))[0].s).toBe(false);
+  const result=(await q("select public.petboost_mobile_request($1,$2,'read',$3) s",[workspace,mobileHash,run]))[0].s;
+  expect(result.status).toBe('saved');expect(result.verificationId).toBe(verification);expect(result.view).toEqual({});
+  expect((await q("select public.petboost_mobile_worker($1,$2,$3,'finish',null,$4,$5) s",[workspace,run,worker,'Synthetic replayed session',verification]))[0].s).toBeNull();
+  await role();expect((await q('select enabled,netlify_verified_at from public.petboost_sync where workspace_id=$1',[workspace]))[0]).toEqual({enabled:false,netlify_verified_at:null});
+  expect((await q('select command,view from public.petboost_mobile_logins where workspace_id=$1',[workspace]))[0]).toEqual({command:null,view:{}});
+});
 it('deduplicates repeats and changed booking IDs without changing group, attendance, notes, name or photo',async()=>{
   await apply([row()]); let s=await snapshot(); const a=s.assignments[0],dog=s.dogs[0];
   await q('select public.move_assignment($1,$2,$3,null,$4)',[day,a.id,s.groups[0].group_id,a.version]);

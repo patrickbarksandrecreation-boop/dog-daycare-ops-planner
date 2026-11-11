@@ -1,5 +1,13 @@
 # Implementation status
 
+## Mobile Petboost reconnect (12 November 2026 Brisbane)
+
+Adds **Reconnect Petboost** and a dedicated phone-sized login page. An administrator-issued one-use code starts a fresh hosted browser; native email/password/code inputs send bounded, encrypted actions to that browser. The worker checks the configured business, saves the encrypted session atomically and dispatches the existing read-only hosted test. The page reports saved and verified separately. No sync activation, booking imports, attendance or group changes occur.
+
+Service-only SQL routines fence duplicate starts/claims, stale submissions, cancellation, timeout, changed codes and superseded browsers. Queued credentials use an ephemeral worker key; the phone uses no credential storage and the PWA bypasses reconnect resources. Supports Auth0 email/password/code forms; social sign-in, passkeys and CAPTCHA require the desktop helper. No new paid service or hosting credential.
+
+Validation so far: production build, Edge type check and all **150 unit/PostgreSQL tests** passed. Seven browser regressions cover the phone flow and a synthetic worker email/password/OTP sign-in. Local Chromium launch is blocked by the executor's Unix-socket restriction; CI must execute these tests before release. Hosted schema/publication and real phone/provider acceptance are not yet claimed. Release evidence will be recorded in the PR.
+
 ## Group sorting selector (12 November 2026 Brisbane)
 
 Operations and **Fit group** share a **Sort groups** dropdown: Colour (Purple → Yellow → Green → Blue → White, alphabetical within each colour), Alphabetical, or Manual order. Other preset/custom colours follow the requested five. Missing/invalid colours use White. The browser remembers the selected display order. Both group views re-sort incoming snapshots automatically; Unassigned, assignments, attendance and saved manual positions are untouched. Same-group drag reordering is available in Manual order; cross-group drag/tap moves remain available in all modes.

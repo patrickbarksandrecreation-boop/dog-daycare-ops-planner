@@ -17,6 +17,10 @@
   external_node_modules = ["@sparticuz/chromium", "playwright-core"]
   included_files = ["node_modules/@sparticuz/chromium/bin/**"]
 
+[functions."petboost-login-background"]
+  external_node_modules = ["@sparticuz/chromium", "playwright-core"]
+  included_files = ["node_modules/@sparticuz/chromium/bin/**"]
+
 
 # Existing files take precedence. Browser deep links return the SPA shell.
 [[redirects]]
@@ -41,6 +45,14 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/petboost-reconnect*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
 
 # Runs only after production publication; dispatches the existing protected
 # read-only check using server-side secrets, never a browser-visible key.

@@ -16,6 +16,9 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
 })()));
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  // Reconnect is online-only and can contain an in-memory login capability.
+  // Never cache its page, scripts or API responses.
+  if (url.pathname.startsWith('/petboost-reconnect') || url.pathname.startsWith('/.netlify/')) return;
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (!(event.request.mode === 'navigate' || url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icon'))) return;
   event.respondWith((async () => {

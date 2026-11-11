@@ -12,7 +12,7 @@ for (const width of [360, 390]) test(`${width}px unassigned expands into a touch
     const lane = page.getByTestId('lane-unassigned');
     const cards = lane.locator('.unassigned-cards');
     await expect(lane.locator('.dog-card')).toHaveCount(100);
-    await page.getByRole('button', { name: 'View all unassigned', exact: true }).tap();
+    await page.getByRole('button', { name: 'View Unassigned', exact: true }).tap();
     await expect(page.getByRole('button', { name: 'View Unassigned', exact: true })).toHaveAttribute('aria-current', 'page');
     expect(await cards.evaluate(element => ({
       horizontal: element.scrollWidth > element.clientWidth,
@@ -46,20 +46,27 @@ for (const width of [360, 390]) test(`${width}px unassigned expands into a touch
     await expect(page.getByTestId('selection-count')).not.toContainText('1 selected');
     const last = lane.locator('.dog-card').last();
     const lastId = await last.getAttribute('data-dog-id');
+    await last.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(180); // Deliberate selection after scrolling to the last booking.
     await last.getByRole('button', { name: /^Select / }).tap();
     await expect(page.getByTestId('selection-count')).toContainText('1 selected');
     await expect(page.getByLabel('Move selected dogs to', { exact: true })).toBeInViewport();
     await page.getByLabel('Move selected dogs to', { exact: true }).selectOption('group-2');
+    await expect(page.getByRole('button', { name: 'View Unassigned', exact: true })).toHaveAttribute('aria-current', 'page');
+    await page.getByRole('button', { name: 'View Group 2', exact: true }).tap();
     await expect(page.getByTestId('lane-group-2').locator(`[data-dog-id="${lastId}"]`)).toBeVisible();
     await expect(lane.locator('.dog-card')).toHaveCount(99);
     await expect(page.getByTestId('present-count')).toHaveText('0');
     await page.getByRole('button', { name: 'View Unassigned', exact: true }).tap();
     await page.getByLabel('Search unassigned dogs').fill('Alfie');
     await expect(lane.locator('.dog-card')).toHaveCount(5);
+    await lane.getByRole('button', { name: 'Select Alfie', exact: true }).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(180);
     await lane.getByRole('button', { name: 'Select Alfie', exact: true }).tap();
     await page.getByRole('button', { name: 'View Group 1', exact: true }).tap();
     await expect(page.getByTestId('selection-count')).toContainText('1 selected');
     await page.getByLabel('Move selected dogs to', { exact: true }).selectOption('group-1');
+    await expect(page.getByRole('button', { name: 'View Group 1', exact: true })).toHaveAttribute('aria-current', 'page');
     await expect(page.getByTestId('lane-group-1').getByTestId('card-Alfie')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const tabs = page.getByRole('navigation', { name: 'Group views and destinations' });

@@ -1,0 +1,98 @@
+{
+  "label": "before",
+  "fixture": "100 fictional dogs; real cloud repository; controlled in-process service",
+  "results": [
+    {
+      "read_delay_ms": 200,
+      "write_delay_ms": 150,
+      "samples": [
+        {
+          "feedback_ms": 448.79999999998836,
+          "next_dog_ready_ms": 448.79999999998836,
+          "confirmed_ms": 448.9000000000233,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 397.29999999998836,
+          "next_dog_ready_ms": 397.4000000000233,
+          "confirmed_ms": 397.4000000000233,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 395.8999999999651,
+          "next_dog_ready_ms": 395.8999999999651,
+          "confirmed_ms": 395.8999999999651,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 390.5,
+          "next_dog_ready_ms": 390.5,
+          "confirmed_ms": 390.5,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 396.1000000000349,
+          "next_dog_ready_ms": 396.1000000000349,
+          "confirmed_ms": 396.1000000000349,
+          "reads": 3,
+          "writes": 1
+        }
+      ],
+      "median": {
+        "feedback_ms": 396,
+        "next_dog_ready_ms": 396,
+        "confirmed_ms": 396
+      }
+    },
+    {
+      "read_delay_ms": 800,
+      "write_delay_ms": 150,
+      "samples": [
+        {
+          "feedback_ms": 1034.4000000000233,
+          "next_dog_ready_ms": 1034.4000000000233,
+          "confirmed_ms": 1034.4000000000233,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 1039.4000000000233,
+          "next_dog_ready_ms": 1039.5,
+          "confirmed_ms": 1039.5,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 1036.2999999999884,
+          "next_dog_ready_ms": 1036.4000000000233,
+          "confirmed_ms": 1036.4000000000233,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 1043.7999999999884,
+          "next_dog_ready_ms": 1043.899999999965,
+          "confirmed_ms": 1044,
+          "reads": 3,
+          "writes": 1
+        },
+        {
+          "feedback_ms": 1035.0999999999767,
+          "next_dog_ready_ms": 1035.0999999999767,
+          "confirmed_ms": 1035.0999999999767,
+          "reads": 3,
+          "writes": 1
+        }
+      ],
+      "median": {
+        "feedback_ms": 1036,
+        "next_dog_ready_ms": 1036,
+        "confirmed_ms": 1036
+      }
+    }
+  ]
+}

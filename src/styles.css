@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-
-:root { font-family:'DM Sans',sans-serif; color:#243c34; background:#f3f5f2; font-synthesis:none; --green:#244d42; --line:#d9e1d8; --muted:#637369; }
+:root { font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; color:#243c34; background:#f3f5f2; font-synthesis:none; --green:#244d42; --line:#d9e1d8; --muted:#637369; }
 * { box-sizing:border-box; }
 body { margin:0; font-size:14px; }
 button,input,select,textarea { font:inherit; }
@@ -23,7 +21,7 @@ textarea { resize:vertical; }
 .rule-note.rule-hard { color:#8b1d1d; background:#ffe5df; border-left:4px solid #b32727; }
 .rule-note.rule-soft { color:#704b00; background:#fff3d5; border-left:4px solid #b77900; }
 h1,h2,h3,p { margin:0; }
-h1,h2,h3,.brand { font-family:Manrope,sans-serif; }
+h1,h2,h3,.brand { font-family:inherit; }
 h2 { font-size:18px; }
 h3 { font-size:14px; }
 small,.muted { color:var(--muted); }
@@ -109,7 +107,9 @@ small,.muted { color:var(--muted); }
 .colour-presets button[aria-pressed=true] { outline:2px solid #427fbd; outline-offset:1px; }
 .colour-editor input[type=color] { display:block; width:100%; height:44px; padding:3px; cursor:pointer; }
 .drag-handle { width:17px; min-height:38px; padding:0; border:0; background:none; color:#8a9a88; flex-shrink:0; touch-action:none; cursor:grab; }
-.card-select { display:flex; flex:1; min-width:0; min-height:38px; justify-content:flex-start; gap:7px; padding:0; background:transparent; border:0; text-align:left; touch-action:pan-y; user-select:none; -webkit-touch-callout:none; }
+.card-select { display:flex; flex:1; min-width:0; min-height:38px; justify-content:flex-start; gap:7px; padding:0; background:transparent; border:0; text-align:left; touch-action:pan-y pinch-zoom; user-select:none; -webkit-touch-callout:none; }
+.dog-card .arrival-action,.dog-card .info-action { touch-action:pan-y pinch-zoom; }
+.dog-card button { -webkit-tap-highlight-color:transparent; }
 .card-select:hover:not(:disabled) { background:transparent; }
 .avatar { width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; font-size:10px; font-weight:700; color:#40574b; background:#eceee1; overflow:hidden; }
 .avatar img { width:100%; height:100%; object-fit:cover; }
@@ -176,7 +176,7 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 .welcome-copy { line-height:1.8; color:#687a5e; font-size:14px; margin-bottom:28px; }
 .welcome-art { background:#dfe8cc; border-radius:22px; min-height:680px; display:flex; align-items:center; justify-content:center; flex-direction:column; color:#557045; overflow:hidden; }
 .art-paw { background:#eaf0df; width:240px; height:240px; border-radius:47% 53% 46% 54%; display:flex; align-items:center; justify-content:center; transform:rotate(-12deg); color:#8ca66c; margin-bottom:35px; }
-.welcome-art p { font:700 46px/1.2 Manrope,sans-serif; letter-spacing:-2px; text-align:center; }
+.welcome-art p { font-size:46px; font-weight:700; line-height:1.2; letter-spacing:-2px; text-align:center; }
 .welcome-art>span { font-size:9px; letter-spacing:1.5px; margin-top:35px; }
 .setup-note { background:#edf1e4; border:1px solid #dee6d5; border-radius:10px; padding:16px; font-size:12px; line-height:1.7; }
 .setup-note p { color:#65775a; margin-top:6px; }
@@ -324,7 +324,7 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 }
 @media(min-width:761px) {
   .planner-shell { height:auto; min-height:100dvh; }
-  .lane-layout { display:grid; grid-template-columns:var(--panel-columns); gap:14px; align-items:start; flex:1; }
+  .lane-layout { display:grid; grid-template-columns:var(--panel-columns); gap:8px 12px; align-items:start; align-content:start; flex:none; }
   .lane-layout > .selection-bar { grid-column:1 / -1; grid-row:1; }
   .lane-layout > .unassigned, .lane-layout .group-wrapper { grid-row:2; min-width:0; position:relative; min-height:var(--panel-min-height, 240px); }
   .lane-layout > .unassigned { grid-column:1; padding-bottom:22px; }
@@ -355,3 +355,161 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 .booking-sync { display:flex; align-items:center; flex-wrap:wrap; gap:8px 16px; padding:10px 18px; border-bottom:1px solid #d7dedb; font-size:12px; }
 .booking-sync>div { display:flex; flex-wrap:wrap; gap:6px 14px; flex:1; }
 .booking-sync p { flex-basis:100%; margin:0; color:#8a3d0a; }
+
+/* The daily board keeps navigation and shared tools outside the resizable lanes. */
+.board-tools { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.board-search { width:min(390px,100%); }
+.board-search input { min-height:36px; }
+.search-result-count { flex-shrink:0; max-width:100%; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+.board-tools .directory-tools { width:auto; margin-left:auto; }
+.board-tools .directory-tools button { min-height:36px; }
+.move-tray { display:flex; align-items:center; flex-wrap:wrap; gap:8px; width:100%; padding:8px 10px; background:#eaf3fc; border:1px solid #bfd4e8; border-radius:8px; color:#254e87; }
+.move-tray > span { font-weight:700; }
+.quick-destinations { display:flex; flex-wrap:wrap; gap:5px; margin-left:auto; }
+.quick-destinations button { min-height:34px; font-size:12px; border-color:#bfd4e8; }
+.quick-destinations button { min-width:0; max-width:100%; overflow-wrap:anywhere; }
+.move-tray .bulk-destination { font-size:0; }
+.move-tray .bulk-destination select { min-width:120px; font-size:12px; padding:6px; }
+.selection-bar:not(.has-selection) { min-height:0; }
+.warning-bar.no-warnings { display:none; }
+.attendance-label { display:none; }
+.card-saving { position:absolute; z-index:3; top:2px; left:2px; display:flex; align-items:center; gap:3px; padding:2px 4px; border-radius:4px; background:#194f78; color:white; font-size:9px; font-weight:700; pointer-events:none; }
+.card-saving svg { animation:save-spin 1s linear infinite; }
+.dog-card.pending { box-shadow:inset 0 0 0 2px #467fa5; }
+.dog-card .card-select:disabled { opacity:1; }
+.group-grid .dog-card { border-radius:7px; }
+.group-grid .dog-name { font-size:13px; font-weight:750; }
+.group-heading .icon-button { opacity:.7; }
+@keyframes save-spin { to { transform:rotate(360deg); } }
+
+@media(min-width:761px) {
+  /* Selecting the first dog must not move the second click of a double-click. */
+  .lane-layout > .selection-bar { height:54px; min-height:54px; }
+  .move-tray { height:54px; min-height:54px; flex-wrap:nowrap; }
+  .move-tray > span,.move-tray > .text-button { flex-shrink:0; }
+  .quick-destinations { flex:1; flex-wrap:nowrap; min-width:0; }
+  .quick-destinations button { display:block; flex:1; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .move-tray .bulk-destination { flex:0 0 120px; }
+  .move-tray .bulk-destination select { width:120px; }
+  .lane-layout > .selection-bar:empty { display:none; }
+  .lane-layout .group-heading { gap:5px; padding-top:7px; padding-bottom:5px; }
+  .lane-layout .group-destination { gap:2px; }
+  .lane-layout .run-select { min-height:30px; }
+  .group-grid { gap:5px; }
+  .lane-layout .group-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,70px),1fr)); }
+  .planner-footer { margin-top:auto; }
+}
+
+@media(max-width:760px) {
+  .planner-shell { gap:5px; padding:0 10px; }
+  .planner-shell:has(.has-selection) { padding-bottom:calc(160px + env(safe-area-inset-bottom)); }
+  .app-header { gap:3px; padding-top:6px; padding-bottom:2px; }
+  .brand { font-size:21px; }
+  .date-control { min-height:44px; }
+  .date-control .icon-button,.date-control .today { min-height:44px; }
+  .day-summary { flex-wrap:nowrap; gap:3px; }
+  .day-counts { flex:1; width:auto; font-size:10px; gap:5px; }
+  .day-counts span { gap:3px; }
+  .day-counts .status-dot { display:none; }
+  .day-summary > .text-button { flex-shrink:0; width:44px; min-height:44px; padding:0; }
+  .records-label,.tool-label { display:none; }
+  .board-tools { flex-wrap:nowrap; gap:6px; position:relative; }
+  .board-search { flex:1; width:auto; min-width:0; }
+  .board-search input { min-height:42px; }
+  .board-search > svg { flex-shrink:0; }
+  .board-search .icon-button { width:28px; flex-shrink:0; }
+  .board-tools .directory-tools { display:flex; flex-shrink:0; width:auto; margin:0; gap:6px; }
+  .board-tools .directory-tools button { flex:none; width:44px; min-height:44px; padding:0; }
+  .board-tools:has(.search-result-count) { flex-wrap:wrap; }
+  .search-result-count { flex:1 0 100%; order:3; line-height:16px; }
+  .lane-layout { gap:5px; }
+  .lane-layout > .group-tabs { order:0; }
+  .lane-layout > .unassigned { order:2; }
+  .lane-layout > .group-board { order:1; }
+  .lane-layout.view-unassigned > .unassigned { order:1; }
+  .lane-layout.view-unassigned > .group-board { display:none; }
+  .group-tabs { grid-template-columns:repeat(auto-fit,minmax(62px,1fr)); gap:4px; padding:2px 0; top:0; border:0; background:#f3f5f2; }
+  .group-tabs button { min-height:48px; padding:5px 2px; gap:2px; font-size:11px; border-radius:7px; line-height:1.15; }
+  .group-tabs button > span { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; max-width:100%; }
+  .group-tabs .active { color:white; background:var(--green); border-color:var(--green); box-shadow:0 2px 5px #244d4220; }
+  .group-tabs .active small { color:#e0eee7; }
+  .lane-layout:has(.has-selection) > .group-tabs { position:sticky; }
+  .group-lane { min-height:180px; }
+  .group-heading { min-height:50px; padding:3px 8px; gap:4px; }
+  .group-destination { gap:2px; min-height:44px; }
+  .group-destination h2 { font-size:17px; }
+  .group-heading .icon-button { width:32px; min-height:44px; }
+  .group-counts { font-size:10px; }
+  .group-counts b { font-size:12px; }
+  .run-select { width:110px; min-height:44px; font-size:11px; }
+  .warning-bar { height:auto; min-height:0; padding:0 8px; }
+  .warning-details { min-height:44px; text-align:left; font-size:11px; }
+  .group-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; padding:6px; }
+  .group-grid .dog-card { height:126px; border-radius:8px; }
+  .group-grid .card-select { height:80px; justify-content:flex-start; align-items:center; padding:3px 2px 0; }
+  .group-grid .avatar { width:48px; height:44px; min-height:44px; margin:0; border-radius:6px; font-size:16px; }
+  .group-grid .card-caption { width:100%; padding:2px 0 0; }
+  .group-grid .dog-name { font-size:13px; line-height:16px; }
+  .group-grid .breed-label { font-size:10px; line-height:13px; }
+  .group-grid .drag-handle { top:auto; bottom:0; left:0; height:44px; min-height:44px; width:calc(100% - 88px); border-top:1px solid #243c3412; border-radius:0; }
+  .group-grid .info-action { top:auto; bottom:0; right:44px; width:44px; height:44px; min-height:44px; border-top:1px solid #243c3412; border-radius:0; }
+  .group-grid .arrival-action,.group-grid .present-mark { top:auto; bottom:0; right:0; width:44px; min-width:44px; height:44px; min-height:44px; border-top:1px solid #243c3412; display:flex; flex-direction:column; gap:2px; }
+  .group-grid .attendance-label { display:block; font-size:9px; font-weight:700; line-height:10px; }
+  .group-grid .indicator-slot { top:3px; right:3px; }
+  .group-grid .card-markers { top:3px; left:3px; }
+  .unassigned:not(.expanded) .search,.unassigned:not(.expanded) .unassigned-cards { display:none; }
+  .unassigned-toolbar { min-height:48px; padding:3px 8px; }
+  .unassigned-heading { min-height:44px; }
+  .unassigned.expanded .unassigned-toolbar { gap:5px; }
+  .unassigned.expanded .unassigned-cards { min-height:0; max-height:none; }
+  .unassigned-cards .dog-card { height:66px; }
+  .unassigned-cards .dog-name { font-size:15px; }
+  .unassigned-cards .breed-label { font-size:12px; }
+  .unassigned .unassigned-cards .info-action,.unassigned .unassigned-cards .arrival-action,.unassigned .unassigned-cards .present-mark { width:44px; min-width:44px; height:44px; min-height:44px; }
+  .selection-bar:not(.has-selection) { display:none; }
+  .selection-bar.has-selection { position:fixed; inset:auto 0 0; z-index:40; margin:0; padding:7px 10px calc(7px + env(safe-area-inset-bottom)); background:#f3f7fb; border-top:1px solid #a9c3db; box-shadow:0 -4px 18px #213c371a; }
+  .move-tray { gap:5px; padding:0; background:none; border:0; }
+  .move-tray > span { flex:1; font-size:12px; }
+  .quick-destinations { flex:1 0 100%; order:3; display:grid; grid-template-columns:repeat(auto-fit,minmax(60px,1fr)); gap:4px; margin:0; }
+  .quick-destinations button { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; height:44px; min-height:44px; padding:4px; font-size:10px; line-height:11px; overflow:hidden; }
+  .move-tray .bulk-destination { flex:0 1 130px; }
+  .move-tray .bulk-destination select { min-width:0; min-height:44px; font-size:11px; }
+  .move-tray .text-button { min-height:44px; font-size:11px; padding:3px; }
+  .empty-group { min-height:90px; }
+}
+@media(min-width:761px) and (max-width:1100px) {
+  .lane-layout { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .lane-layout > .unassigned,.lane-layout .group-wrapper { grid-row:auto; }
+  .lane-layout > .unassigned { grid-column:auto; }
+  .board-search { flex:1; }
+  .app-header { gap:10px; }
+  .day-counts { gap:10px; }
+}
+@media(max-width:375px) {
+  .group-grid .drag-handle { top:0; bottom:auto; width:24px; border-top:0; }
+  .group-grid .info-action { left:0; right:auto; width:50%; }
+  .group-grid .arrival-action,.group-grid .present-mark { width:50%; }
+}
+/* Touch tablets retain the panel layout with the same direct actions as phones. */
+@media(min-width:761px) and (pointer:coarse) {
+  .lane-layout .group-grid { grid-template-columns:repeat(auto-fill,minmax(min(100%,112px),1fr)); }
+  .group-grid .dog-card { height:126px; border-radius:8px; }
+  .group-grid .card-select { height:80px; justify-content:flex-start; align-items:center; padding:3px 2px 0; }
+  .group-grid .avatar { width:48px; height:44px; min-height:44px; margin:0; border-radius:6px; font-size:16px; }
+  .group-grid .card-caption { width:100%; padding:2px 0 0; }
+  .group-grid .dog-name { font-size:13px; line-height:16px; }
+  .group-grid .breed-label { font-size:10px; line-height:13px; }
+  .group-grid .drag-handle { top:auto; bottom:0; left:0; height:44px; min-height:44px; width:calc(100% - 88px); border-top:1px solid #243c3412; border-radius:0; }
+  .group-grid .info-action { top:auto; bottom:0; right:44px; width:44px; height:44px; min-height:44px; border-top:1px solid #243c3412; border-radius:0; }
+  .group-grid .arrival-action,.group-grid .present-mark { top:auto; bottom:0; right:0; width:44px; min-width:44px; height:44px; min-height:44px; border-top:1px solid #243c3412; display:flex; flex-direction:column; gap:2px; }
+  .group-grid .attendance-label { display:block; font-size:9px; font-weight:700; line-height:10px; }
+  .group-grid .indicator-slot { top:3px; right:3px; }
+  .group-grid .card-markers { top:3px; left:3px; }
+  .unassigned-cards .dog-card { height:66px; }
+  .unassigned-cards .card-select { min-height:56px; }
+  .unassigned-cards .drag-handle { width:24px; min-height:44px; }
+  .unassigned-cards .indicator-slot:empty { display:none; }
+  .unassigned-cards .info-action,.unassigned-cards .arrival-action,.unassigned-cards .present-mark { width:44px; min-width:44px; min-height:44px; }
+  .lane-layout .unassigned-cards { grid-template-columns:minmax(0,1fr); }
+}
+@media(prefers-reduced-motion:reduce) { .card-saving svg { animation:none; } }

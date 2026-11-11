@@ -1,5 +1,7 @@
 # Server communication optimisation
 
+Latest local handler UI and save-response review: [UI-SPEED-REVIEW.md](UI-SPEED-REVIEW.md), 11 November 2026. The historical hosted-refresh measurements below describe an earlier change.
+
 Measured 11 October 2026 against the existing Supabase project from a local Chromium browser. The operational Monday roster was not changed.
 
 ## Changes

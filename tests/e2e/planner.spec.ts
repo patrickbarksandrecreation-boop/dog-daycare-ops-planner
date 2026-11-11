@@ -180,7 +180,7 @@ test('1920×1080 density shows at least 70 complete group cards at normal zoom',
   expect(measure.visible).toBeGreaterThanOrEqual(70); expect(measure.zoom).toBe(1);
   expect(measure.overflow).toBe(false); expect(measure.font).toBeGreaterThanOrEqual(13);
   const tile = page.locator('.group-grid .dog-card').first();
-  expect((await tile.boundingBox())!.width).toBeLessThan(75);
+  expect((await tile.boundingBox())!.width).toBeLessThan(85);
   expect((await tile.boundingBox())!.height).toBe(66);
   await expect(tile.locator('.dog-name')).toHaveCSS('font-size','13px');
   await mkdir('docs/screenshots',{recursive:true});
@@ -199,11 +199,20 @@ test('390px touch supports tap moves, stationary hold and grip drag without conf
   try {
     await demo(page);
     const tile = page.locator('.current-view .group-grid .dog-card').first();
-    expect((await tile.boundingBox())!.width).toBeLessThan(90);
-    expect((await tile.boundingBox())!.height).toBe(70);
+    const tileBox = (await tile.boundingBox())!;
+    expect(tileBox.width).toBeGreaterThanOrEqual(100);
+    expect(tileBox.width).toBeLessThan(130);
+    expect(tileBox.height).toBeGreaterThanOrEqual(120);
+    for (const action of ['Information for Alfie', 'Mark Archie present']) {
+      const box = (await page.getByRole('button', { name: action, exact: true }).boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
     await page.getByRole('button',{name:'Select Archie',exact:true}).tap();
     await page.getByLabel('Move selected dogs to',{exact:true}).selectOption('group-2');
-    await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toHaveCount(1);
+    await expect(page.getByRole('button',{name:'View Group 1',exact:true})).toHaveAttribute('aria-current','page');
+    await page.getByRole('button',{name:'View Group 2',exact:true}).tap();
+    await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toBeVisible();
     await page.getByRole('button',{name:'View Group 1',exact:true}).tap();
     const cdp=await context.newCDPSession(page);
     const touch=async (type: 'touchStart'|'touchMove'|'touchEnd',x=0,y=0) =>
@@ -234,7 +243,9 @@ test('390px touch supports tap moves, stationary hold and grip drag without conf
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await touch('touchMove',to.x+to.width/2,to.y+to.height/2);
     await touch('touchEnd');
-    await expect(page.getByTestId('lane-group-3').getByTestId('card-Alfie')).toHaveCount(1);
+    await expect(page.getByRole('button',{name:'View Group 1',exact:true})).toHaveAttribute('aria-current','page');
+    await page.getByRole('button',{name:'View Group 3',exact:true}).tap();
+    await expect(page.getByTestId('lane-group-3').getByTestId('card-Alfie')).toBeVisible();
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.getByRole('button',{name:'View Group 1',exact:true}).tap();
     await page.evaluate(()=>window.scrollTo(0,0));

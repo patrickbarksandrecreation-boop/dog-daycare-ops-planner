@@ -1,5 +1,9 @@
 # Workflow verification
 
+Mobile interaction follow-up (11 November 2026): **86 browser tests covered across suite/focused runs**, including 12 native touch-gesture cases and five retained-source-view regressions; production build passed. See [MOBILE-INTERACTIONS.md](MOBILE-INTERACTIONS.md). Model/backend code did not change in this follow-up.
+
+Latest handler UI/speed pass (11 November 2026): **137 unit/PostgreSQL + 69 Chromium tests passed**, with production/Edge builds and the PWA offline-shell check. See [UI-SPEED-REVIEW.md](UI-SPEED-REVIEW.md) for current evidence, eight save/concurrency regressions, responsive controls and timing methodology. Historical counts below describe earlier milestones. Use `PLANNER_CHROMIUM_PATH` to select an installed Chromium when the standard Playwright browser is unavailable.
+
 Runs/markers update: **35 model/database tests + 13 browser tests passed (48 total)**; TypeScript/build also passed. `tests/runs.test.ts` and the migration 004 section of `workspace.test.ts` cover persistence, warning lifecycle, staff access, invalid runs, stale versions and tenant isolation. Browser tests cover both markers, warning details, run changes/clearing and the mobile database shortcut. The optional hosted test requires migrations through 004; it has not been executed against a cloud project.
 
 M3 adds 11 repeatable tests in `tests/workspace.test.ts`, covering upgrade preservation, workspace isolation, cross-workspace RPC denial, stale competing moves, transactional rollback, attendance history, append-only restrictions, composite constraints, scoped photos, unregistered sessions, staff permissions, retained removal history and fictional seeding. Current results: **32 model/database tests and 11 browser tests passed**, plus TypeScript and production build. See [M3-PERSISTENCE.md](M3-PERSISTENCE.md) for the security contract and limits of the serialized PGlite environment.

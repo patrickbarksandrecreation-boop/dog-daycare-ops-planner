@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
   DndContext, DragOverlay, KeyboardSensor, PointerSensor, closestCenter,
@@ -16,6 +16,7 @@ import type { Repository } from './repository';
 import { groupConflicts, ruleLabel } from './behaviour';
 import { toggleSelection, type SelectedAssignment } from './selection';
 import { usePlanner } from './usePlanner';
+import { previewAttendance, previewMove } from './optimistic';
 import { Modal, SaveError } from './components/Modal';
 import { Avatar } from './components/Avatar';
 import { DogCard } from './components/DogCard';
@@ -38,9 +39,9 @@ function DestinationTab({ id, name, active, choose, summary }: {
     <span>{name}</span><small>{summary}</small>
   </button>;
 }
-function Unassigned({ count, search, setSearch, selected, move, children, tools, resize, style, expanded, expand }: {
+function Unassigned({ count, search, setSearch, selected, move, children, resize, style, expanded, expand }: {
   count: number; search: string; setSearch: (s: string) => void; selected: boolean;
-  move: () => void; children: ReactNode; tools: ReactNode; resize: ReactNode; style: CSSProperties;
+  move: () => void; children: ReactNode; resize: ReactNode; style: CSSProperties;
   expanded: boolean; expand: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unassigned' });
@@ -56,7 +57,6 @@ function Unassigned({ count, search, setSearch, selected, move, children, tools,
       <label className="search"><Search size={16}/><input aria-label="Search unassigned dogs" placeholder="Search unassigned…" value={search} onChange={e => setSearch(e.target.value)}/>
         {search && <button className="icon-button" onClick={() => setSearch('')} aria-label="Clear unassigned search"><X size={14}/></button>}
       </label>
-      <div className="directory-tools">{tools}</div>
     </div>
     <div className="unassigned-cards">{children}</div>
     {resize}
@@ -85,8 +85,11 @@ const collision: CollisionDetection = args => {
 export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void }) {
   const [date, setDate] = useState(todayBrisbane());
   const panels = usePanelSizes();
-  const { snapshot: state, profile, connection, busy, loading, loadError, error, setError, run, refresh, editable } = usePlanner(repo, date);
+  const { snapshot: state, profile, connection, busy, pendingIds, loading, loadError, error, setError, run, refresh, editable: boardEditable } = usePlanner(repo, date);
+  const editable = boardEditable && !busy;
   const [view, setView] = useState('group-1');
+  const initialViewDate = useRef('');
+  const [boardSearch, setBoardSearch] = useState('');
   const [search, setSearch] = useState('');
   const [databaseSearch, setDatabaseSearch] = useState('');
   const [database, setDatabase] = useState(false);
@@ -100,12 +103,15 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const [drag, setDrag] = useState<Assignment | null>(null);
   const [removing, setRemoving] = useState<Assignment | null>(null);
   const [clearing, setClearing] = useState<Snapshot['day'] | null>(null);
+  const moveEditable = boardEditable && selection.every(a => !pendingIds.has(a.id));
   const totals = counts(state?.assignments || []);
   const manager = profile?.role === 'manager';
   const rules = state?.rules || [];
-  const dogsById = new Map(state?.dogs.map(d => [d.id, d]));
+  const dogsById = useMemo(() => new Map(state?.dogs.map(d => [d.id, d])), [state?.dogs]);
   const photoTarget = photoDog ? dogsById.get(photoDog.id) : undefined;
-  const shortNames = shortDogNames(state?.dogs || []);
+  const shortNames = useMemo(() => shortDogNames(state?.dogs || []), [state?.dogs]);
+  const ruleDogIds = useMemo(() => new Set(rules.filter(r => r.active).flatMap(r => r.dogs)), [rules]);
+  const waterWarningIds = useMemo(() => new Set(state?.groups.flatMap(g => runWarnings(state.assignments, state.dogs, g).map(w => w.dog_id)) || []), [state]);
   const infoDog = infoId ? dogsById.get(infoId) : undefined;
   const infoAssignment = state?.assignments.find(a => a.dog_id === infoId);
   const sensors = useSensors(
@@ -120,37 +126,47 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   useEffect(() => {
     if (state && view !== 'unassigned' && !state.groups.some(g => g.group_id === view)) setView(state.groups[0]?.group_id || 'unassigned');
   }, [state, view]);
+  useEffect(() => {
+    if (!state || initialViewDate.current === date) return;
+    initialViewDate.current = date;
+    setView(state.assignments.some(a => isActive(a) && a.group_id) ? state.groups[0]?.group_id || 'unassigned' : 'unassigned');
+  }, [state, date]);
   function changeDate(next: string) {
     if (!next || busy) return;
     setDate(next); setSelection([]); setDrag(null); setRename(null); setInfoId(null);
-    setHistory(false); setDatabase(false); setClearing(null); setRemoving(null); setSearch(''); setAlertGroup(null);
+    setHistory(false); setDatabase(false); setClearing(null); setRemoving(null); setSearch(''); setBoardSearch(''); setAlertGroup(null);
   }
   function offsetDate(amount: number) {
     const next = new Date(`${date}T12:00:00Z`);
     next.setUTCDate(next.getUTCDate() + amount); changeDate(next.toISOString().slice(0, 10));
   }
   async function move(a: Assignment, group: string | null, before: string | null = null) {
-    if (!state || !editable) return;
-    if (await run(() => repo.move(state.day.id, a.id, group, before, a.version))) {
-      setSelection([]); setView(group || 'unassigned');
-    }
+    if (!state || !boardEditable || pendingIds.has(a.id)) return;
+    setSelection([]);
+    await run(() => repo.move(state.day.id, a.id, group, before, a.version), {
+      ids: [a.id], preview: current => previewMove(current, [a], group, before),
+    });
   }
   async function attendance(a: Assignment, status: Attendance) {
-    if (!state) return false;
-    return run(() => repo.attendance(state.day.id, a.id, status, a.version));
+    if (!state || pendingIds.has(a.id)) return false;
+    return run(() => repo.attendance(state.day.id, a.id, status, a.version), {
+      ids: [a.id], preview: current => previewAttendance(current, a.id, a.version, status),
+    });
   }
   function showInfo(id: string) { setInfoId(id); }
   async function moveSelected(group: string | null) {
-    if (!state || !editable || !selection.length) return;
-    const saved = await run(() => repo.moveMany(state.day.id, selection, group));
-    // run reconciles failures/ambiguous responses; require a fresh selection
-    // rather than leaving a batch available for an accidental replay.
+    if (!state || !moveEditable || !selection.length) return;
+    const captured = selection;
+    // Free the selection immediately so the next dog is available while this
+    // batch is checked. Failed/ambiguous requests are never replayed.
     setSelection([]);
-    if (saved) setView(group || 'unassigned');
+    await run(() => repo.moveMany(state.day.id, captured, group), {
+      ids: captured.map(a => a.id), preview: current => previewMove(current, captured, group),
+    });
   }
   function onDrop(event: DragEndEvent) {
     const source = drag; setDrag(null);
-    if (!source || !state || !editable || !event.over || event.active.id === event.over.id) return;
+    if (!source || !state || !boardEditable || pendingIds.has(source.id) || !event.over || event.active.id === event.over.id) return;
     const over = state.assignments.find(a => a.id === event.over!.id);
     const destination = event.over.data.current?.destination || String(event.over.id);
     const group = over ? over.group_id : destination === 'unassigned' ? null : destination;
@@ -165,15 +181,16 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   }
   function cards(group: string | null) {
     const all = lane(state!.assignments, group);
-    const filtered = group === null ? all.filter(a => dogsById.get(a.dog_id)!.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())) : all;
+    const filtered = all.filter(a => matchesDog(dogsById.get(a.dog_id)!, boardSearch)
+      && (group !== null || dogsById.get(a.dog_id)!.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())));
     return <SortableContext items={filtered.map(a => a.id)} strategy={rectSortingStrategy}>
       {filtered.map(a => <DogCard key={a.id} assignment={a} dog={dogsById.get(a.dog_id)!}
         shortName={shortNames.get(a.dog_id)!}
-        selected={selection.some(s => s.id === a.id)} disabled={!editable}
-        indicator={(state!.groups.some(g => runWarnings([a], state!.dogs, g).length) ? 'Water park warning — open dog information' : rules.some(r => r.active && r.dogs.includes(a.dog_id)) ? 'Interaction rule — open dog information' : undefined)}
+        selected={selection.some(s => s.id === a.id)} disabled={!boardEditable || pendingIds.has(a.id)} pending={pendingIds.has(a.id)}
+        indicator={waterWarningIds.has(a.dog_id) ? 'Water park warning — open dog information' : ruleDogIds.has(a.dog_id) ? 'Interaction rule — open dog information' : undefined}
         select={() => setSelection(previous => toggleSelection(previous, a))}
         info={() => showInfo(a.dog_id)} arrive={() => void attendance(a, 'present')}/>)}
-      {group === null && !filtered.length && <p className="strip-empty">{search ? 'No matching unassigned dogs.' : !state?.assignments.length ? 'No dogs booked for this day. Book a dog using Dog database.' : 'All booked dogs are assigned. Book another dog using Dog database.'}</p>}
+      {group === null && !filtered.length && <p className="strip-empty">{search || boardSearch ? 'No matching unassigned dogs.' : !state?.assignments.length ? 'No dogs booked for this day. Book a dog using Dog database.' : 'All booked dogs are assigned. Book another dog using Dog database.'}</p>}
     </SortableContext>;
   }
   const shortDate = new Date(`${date}T12:00:00+10:00`).toLocaleDateString('en-AU', { timeZone: 'Australia/Brisbane', weekday: 'short', day: 'numeric', month: 'short' });
@@ -187,8 +204,8 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <button className="icon-button" aria-label="Next day" disabled={busy} onClick={() => offsetDate(1)}><ArrowRight size={15}/></button>
         <button className="today" disabled={busy} onClick={() => changeDate(todayBrisbane())}>Today</button>
       </div>
-      <span className={`connection ${connection}`} role="status"><i/>{busy ? 'Saving…' : loading ? state ? 'Refreshing…' : 'Loading…' : connection === 'online' ? repo.demo ? 'Demo · fictional data' : 'Live · saved' : connection === 'offline' ? 'Offline · view only' : 'Connecting…'}</span>
-      <button className="icon-button" aria-label={repo.demo ? 'Exit demo' : 'Sign out'} onClick={async () => {
+      <span className={`connection ${connection}`} role="status"><i/>{connection === 'offline' ? 'Offline · view only' : busy ? 'Saving…' : loading ? state ? 'Refreshing…' : 'Loading…' : connection === 'online' ? repo.demo ? 'Demo · fictional data' : 'Live · saved' : 'Connecting…'}</span>
+      <button className="icon-button" disabled={busy} aria-label={repo.demo ? 'Exit demo' : 'Sign out'} onClick={async () => {
         try { await repo.signOut(); onExit(); } catch (e) { setError(e instanceof Error ? e.message : 'Sign out failed.'); }
       }}><LogOut size={17}/></button>
     </header>
@@ -200,26 +217,35 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         <span><i className="status-dot present"/><b data-testid="present-count">{totals.present}</b> Present</span>
         <span><i className="status-dot departed"/><b data-testid="departed-count">{totals.departed}</b> Departed</span>
       </div>
-      <button className="text-button" onClick={() => setHistory(true)} disabled={!state}><History size={15}/>Day records</button>
+      <button className="text-button" aria-label="Day records" title="Day records" onClick={() => setHistory(true)} disabled={!state}><History size={15}/><span className="records-label">Day records</span></button>
     </div>
     {repo.bookingSync && repo.requestBookingSync && <BookingSync repo={repo} date={date} dogs={state?.dogs || []} editable={editable} refresh={refresh}/>}
     {error && <div className="notice error" role="alert"><span>{error}</span>{!loading && <button onClick={() => { setError(''); refresh(); }}>Retry</button>}{!loadError && <button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={16}/></button>}</div>}
     {connection === 'offline' && <div className="notice offline">Editing paused. {state ? 'Last loaded board shown; reconnect to save changes.' : 'Reconnect to load the board.'}</div>}
+    {state && <div className="board-tools">
+      <label className="search board-search"><Search size={17}/><input aria-label="Find a dog on the board" placeholder="Find a dog in any group…" value={boardSearch} onChange={e => {
+        const value = e.target.value; setBoardSearch(value);
+        const matches = state.assignments.filter(a => isActive(a) && matchesDog(dogsById.get(a.dog_id)!, value));
+        if (value && !matches.some(a => (a.group_id || 'unassigned') === view) && matches[0]) setView(matches[0].group_id || 'unassigned');
+      }}/>{boardSearch && <button className="icon-button" aria-label="Clear board search" onClick={() => setBoardSearch('')}><X size={16}/></button>}</label>
+      {boardSearch && <span className="search-result-count" role="status">{state.assignments.filter(a => isActive(a) && matchesDog(dogsById.get(a.dog_id)!, boardSearch)).length} matching dogs</span>}
+      <div className="directory-tools"><button aria-label="Dog database" title="Dog database" onClick={() => setDatabase(true)}><Database size={16}/><span className="tool-label">Dog database</span></button>
+        <button className="primary" aria-label="New Dog" title="New Dog" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/><span className="tool-label">New Dog</span></button></div>
+    </div>}
     {!state ? <main className="loading-board" aria-busy={loading}><PawPrint size={35}/><h2 role="status">{loading ? 'Opening the daily board…' : loadError ? 'Unable to open the daily board.' : 'Waiting for a connection…'}</h2></main> :
       <DndContext sensors={sensors} collisionDetection={collision}
         onDragStart={event => { setDrag(state.assignments.find(a => a.id === event.active.id) || null); }}
         onDragCancel={() => setDrag(null)} onDragEnd={onDrop}>
-        <div className="lane-layout" ref={panels.layoutRef} style={panels.columns(['unassigned', ...state.groups.map(g => g.group_id)])}>
-          <Unassigned expanded={view === 'unassigned'} expand={() => setView('unassigned')} style={panels.style('unassigned')} resize={<><PanelResize id="unassigned" name="Unassigned" resize={panels.resize}/><PanelResize id="unassigned" name="Unassigned" resize={panels.resize} widthOnly/></>} count={totals.unassigned} search={search} setSearch={setSearch} selected={selection.length > 0 && editable}
-            move={() => void moveSelected(null)}
-            tools={<><button onClick={() => setDatabase(true)}><Database size={16}/>Dog database</button>
-              <button className="primary" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/>New Dog</button></>}>
+        <div className={`lane-layout ${view === 'unassigned' ? 'view-unassigned' : ''}`} ref={panels.layoutRef} style={panels.columns(['unassigned', ...state.groups.map(g => g.group_id)])}>
+          <Unassigned expanded={view === 'unassigned'} expand={() => setView('unassigned')} style={panels.style('unassigned')} resize={<><PanelResize id="unassigned" name="Unassigned" resize={panels.resize}/><PanelResize id="unassigned" name="Unassigned" resize={panels.resize} widthOnly/></>} count={totals.unassigned} search={search} setSearch={setSearch} selected={selection.length > 0 && moveEditable}
+            move={() => void moveSelected(null)}>
             {cards(null)}
           </Unassigned>
           <div className={`selection-bar ${selection.length ? 'has-selection' : ''}`}>
-            <span role="status" data-testid="selection-count">{selection.length ? <><strong>{selection.length}</strong> selected · choose a destination</> : 'Select dogs, then a destination · Drag by the grip · Hold for details'}</span>
-            {selection.length > 0 && <><label className="bulk-destination">Move selected dogs to<select aria-label="Move selected dogs to" disabled={!editable} value="" onChange={e => { if (e.target.value) void moveSelected(e.target.value === 'unassigned' ? null : e.target.value); }}><option value="">Choose destination…</option><option value="unassigned">Unassigned</option>{state.groups.map(g => <option key={g.group_id} value={g.group_id}>{g.displayed_name}</option>)}</select></label><button className="text-button" aria-label="Clear selection" onClick={() => setSelection([])}><X size={14}/>Clear selection</button></>}
-            <small>{repo.demo ? 'Fictional bookings, attendance & rules' : 'Synthetic pilot · no real records'}</small>
+            {selection.length > 0 ? <div className="move-tray"><span role="status" data-testid="selection-count"><strong>{selection.length}</strong> selected</span>
+              <div className="quick-destinations" aria-label="Quick move destinations">{[{ group_id: 'unassigned', displayed_name: 'Unassigned' }, ...state.groups].map(g => <button key={g.group_id} disabled={!moveEditable} aria-label={`Move selection to ${g.displayed_name}`} onClick={() => void moveSelected(g.group_id === 'unassigned' ? null : g.group_id)}>{g.displayed_name}</button>)}</div>
+              <label className="bulk-destination">Move selected dogs to<select aria-label="Move selected dogs to" disabled={!moveEditable} value="" onChange={e => { if (e.target.value) void moveSelected(e.target.value === 'unassigned' ? null : e.target.value); }}><option value="">Move to…</option><option value="unassigned">Unassigned</option>{state.groups.map(g => <option key={g.group_id} value={g.group_id}>{g.displayed_name}</option>)}</select></label><button className="text-button" aria-label="Clear selection" onClick={() => setSelection([])}><X size={14}/>Clear</button>
+            </div> : <><span role="status" data-testid="selection-count">Tap dogs to select · choose a group to move</span><small>{repo.demo ? 'Fictional bookings, attendance & rules' : 'Synthetic pilot · no real records'}</small></>}
           </div>
           <nav className={`group-tabs ${drag ? 'moving' : ''}`} aria-label="Group views and destinations">
             <DestinationTab id="unassigned" name="Unassigned" active={view === 'unassigned'}
@@ -237,7 +263,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
               const c = groupCounts(state.assignments, g.group_id);
               return <div key={g.group_id} className={`group-wrapper ${view === g.group_id ? 'current-view' : ''}`} data-panel-id={g.group_id} style={panels.style(g.group_id)}>
                 <GroupLane id={g.group_id} name={g.displayed_name} order={g.display_order} present={c.present} planned={c.planned}
-                  selected={selection.length > 0 && editable} dragging={!!drag} destination={() => void moveSelected(g.group_id)}
+                  selected={selection.length > 0 && moveEditable} dragging={!!drag} destination={() => void moveSelected(g.group_id)}
                   rename={editable ? () => { setSelection([]); setRename(rename === g.group_id ? null : g.group_id); } : undefined}
                   warnings={[...groupConflicts(state.assignments, g.group_id, rules), ...runWarnings(state.assignments, state.dogs, g)]}
                   showWarnings={() => setAlertGroup(g.group_id)}

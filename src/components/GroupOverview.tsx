@@ -5,10 +5,13 @@ import type { Connection, Dog, Group } from '../model';
 import { Avatar } from './Avatar';
 import { breedLabel } from '../dogLabels';
 import { dogColourStyle } from '../dogColours';
+import type { GroupSort } from '../groupSort';
+import { GroupSortSelector } from './GroupSortSelector';
 
-export function GroupOverview({ group, groups, dogs, shortNames, date, connection, loading, busy, demo, error, close, choose }: {
+export function GroupOverview({ group, groups, dogs, shortNames, date, connection, loading, busy, demo, error, close, choose, sort, changeSort }: {
   group: Group; groups: Group[]; dogs: Dog[]; shortNames: Map<string, string>; date: string;
   connection: Connection; loading: boolean; busy: boolean; demo: boolean; error: string;
+  sort: GroupSort; changeSort: (sort: GroupSort) => void;
   close: () => void; choose: (id: string) => void;
 }) {
   const back = useRef<HTMLButtonElement>(null);
@@ -30,8 +33,9 @@ export function GroupOverview({ group, groups, dogs, shortNames, date, connectio
         </select>
       </label>
       <div className="overview-summary"><h1>{group.displayed_name} <span>· {dogs.length} dogs</span></h1>
-        <span>{date}{group.run ? ` · ${group.run}` : ''}</span></div>
-      <span className={`overview-status ${connection}`} role="status">{status}</span>
+        <span>{date}{group.run ? ` · ${group.run}` : ''}</span>
+        <span className={`overview-status ${connection}`} role="status">{status}</span></div>
+      <GroupSortSelector value={sort} change={changeSort}/>
     </header>
     {dogs.length ? <div className="overview-grid" style={{
       '--portrait-rows': Math.max(8, Math.ceil(dogs.length / 5)),

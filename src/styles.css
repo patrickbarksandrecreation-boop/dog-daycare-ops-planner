@@ -540,3 +540,15 @@ dialog footer { display:flex; justify-content:flex-end; gap:8px; margin-top:20px
 @media (min-width:761px), (orientation:landscape) {
   .overview-grid { max-height:calc(var(--wide-rows) * 90px); grid-template-columns:repeat(10,minmax(0,1fr)); grid-template-rows:repeat(var(--wide-rows),minmax(0,1fr)); }
 }
+
+.group-sort-selector { display:flex; align-items:center; gap:6px; min-width:0; flex-shrink:0; }
+.group-sort-selector > span { font-size:11px; white-space:nowrap; }
+.group-sort-selector select { width:138px; min-height:36px; padding:6px; font-size:12px; }
+.overview-header .group-sort-selector { width:100%; }
+.overview-header .group-sort-selector > span { display:none; }
+.overview-header .group-sort-selector select { width:100%; min-height:44px; }
+.overview-summary .overview-status { text-align:left; line-height:12px; }
+@media(max-width:760px) {
+  .board-tools .group-sort-selector > span { display:none; }
+  .board-tools .group-sort-selector select { width:112px; min-height:44px; font-size:11px; }
+}

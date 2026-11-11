@@ -29,6 +29,8 @@ import { GroupLane } from './components/GroupLane';
 import { GroupOverview } from './components/GroupOverview';
 import { PanelResize, usePanelSizes } from './components/PanelResize';
 import { BookingSync } from './components/BookingSync';
+import { GroupSortSelector } from './components/GroupSortSelector';
+import { groupSortStorageKey, isGroupSort, sortGroupAssignments, type GroupSort } from './groupSort';
 
 function DestinationTab({ id, name, active, choose, summary }: {
   id: string; name: string; active: boolean; choose: () => void; summary: string;
@@ -90,6 +92,18 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const editable = boardEditable && !busy;
   const [view, setView] = useState('group-1');
   const [overview, setOverview] = useState<string | null>(null);
+  const [groupSort, setGroupSort] = useState<GroupSort>(() => {
+    try { const saved = localStorage.getItem(groupSortStorageKey); return isGroupSort(saved) ? saved : 'manual'; }
+    catch { return 'manual'; }
+  });
+  function changeGroupSort(sort: GroupSort) {
+    setGroupSort(sort);
+    try { localStorage.setItem(groupSortStorageKey, sort); } catch { /* Sorting still works when storage is unavailable. */ }
+  }
+  function groupItems(group: string | null) {
+    const items = lane(state!.assignments, group);
+    return group === null ? items : sortGroupAssignments(items, dogsById, groupSort);
+  }
   const overviewTrigger = useRef<string | null>(null);
   const closeOverview = useCallback(() => {
     setOverview(null);
@@ -178,7 +192,10 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     const destination = event.over.data.current?.destination || String(event.over.id);
     const group = over ? over.group_id : destination === 'unassigned' ? null : destination;
     let before = over?.id || null;
-    if (over && source.group_id === group) {
+    if (group !== null && groupSort !== 'manual') {
+      if (source.group_id === group) return;
+      before = null;
+    } else if (over && source.group_id === group) {
       const items = lane(state.assignments, group);
       if (items.findIndex(a => a.id === source.id) < items.findIndex(a => a.id === over.id)) {
         before = items[items.findIndex(a => a.id === over.id) + 1]?.id || null;
@@ -187,7 +204,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
     void move(source, group, before);
   }
   function cards(group: string | null) {
-    const all = lane(state!.assignments, group);
+    const all = groupItems(group);
     const filtered = all.filter(a => matchesDog(dogsById.get(a.dog_id)!, boardSearch)
       && (group !== null || dogsById.get(a.dog_id)!.name.toLocaleLowerCase().includes(search.toLocaleLowerCase())));
     return <SortableContext items={filtered.map(a => a.id)} strategy={rectSortingStrategy}>
@@ -203,8 +220,8 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
   const shortDate = new Date(`${date}T12:00:00+10:00`).toLocaleDateString('en-AU', { timeZone: 'Australia/Brisbane', weekday: 'short', day: 'numeric', month: 'short' });
   const overviewGroup = state?.groups.find(g => g.group_id === overview);
   if (state && overviewGroup) return <GroupOverview group={overviewGroup} groups={state.groups}
-    dogs={lane(state.assignments, overviewGroup.group_id).map(a => dogsById.get(a.dog_id)).filter((dog): dog is Dog => !!dog)}
-    shortNames={shortNames} date={shortDate} connection={connection} loading={loading} busy={busy} demo={!!repo.demo}
+    dogs={groupItems(overviewGroup.group_id).map(a => dogsById.get(a.dog_id)).filter((dog): dog is Dog => !!dog)}
+    sort={groupSort} changeSort={changeGroupSort} shortNames={shortNames} date={shortDate} connection={connection} loading={loading} busy={busy} demo={!!repo.demo}
     error={error} close={closeOverview} choose={id => { overviewTrigger.current = id; setOverview(id); setView(id); }}/>;
   return <SaveError.Provider value={error}><div className="planner-shell">
     <header className="app-header">
@@ -241,6 +258,7 @@ export function Planner({ repo, onExit }: { repo: Repository; onExit: () => void
         if (value && !matches.some(a => (a.group_id || 'unassigned') === view) && matches[0]) setView(matches[0].group_id || 'unassigned');
       }}/>{boardSearch && <button className="icon-button" aria-label="Clear board search" onClick={() => setBoardSearch('')}><X size={16}/></button>}</label>
       {boardSearch && <span className="search-result-count" role="status">{state.assignments.filter(a => isActive(a) && matchesDog(dogsById.get(a.dog_id)!, boardSearch)).length} matching dogs</span>}
+      <GroupSortSelector value={groupSort} change={changeGroupSort}/>
       <div className="directory-tools"><button aria-label="Dog database" title="Dog database" onClick={() => setDatabase(true)}><Database size={16}/><span className="tool-label">Dog database</span></button>
         <button className="primary" aria-label="New Dog" title="New Dog" disabled={!editable} onClick={() => setEditor({})}><Plus size={17}/><span className="tool-label">New Dog</span></button></div>
     </div>}

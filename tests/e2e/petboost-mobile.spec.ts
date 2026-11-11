@@ -61,6 +61,7 @@ test('an expired capability stops polling and clears the login fields',async({pa
   await page.goto(`/petboost-reconnect.html#code=${code}`);await page.getByRole('button',{name:'Start secure login'}).click();
   await page.getByLabel('Password',{exact:true}).fill('synthetic-private-value');
   await expect(page.getByRole('status')).toContainText('fresh reconnect code');
+  await expect(page.getByLabel('Reconnect code')).toBeVisible();
   await expect(page.getByLabel('Password',{exact:true})).toHaveCount(0);expect(reads).toBe(1);
 });
 test('lost network and failed hosted checks never become verified; narrow screens keep controls usable',async({page})=>{

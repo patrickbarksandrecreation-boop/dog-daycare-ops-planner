@@ -72,7 +72,7 @@ async function poll() {
   polling=true;
   const previousRun=run;
   try {const result=await api('read');if(!pending && !ended && run===previousRun){error('');render(result);}}
-  catch(e){if(!pending && !ended && run===previousRun){lockForm(true);error(e.status===401?e.message:'Connection interrupted. Reconnecting to the login browser…');if(e.status===401)finish('A fresh reconnect code is needed.');}}
+  catch(e){if(!pending && !ended && run===previousRun){lockForm(true);error(e.status===401?e.message:'Connection interrupted. Reconnecting to the login browser…');if(e.status===401){finish('A fresh reconnect code is needed.');$('code-form').hidden=false;}}}
   finally{polling=false;if(!ended)schedulePoll(2000);}
 }
 async function start() {

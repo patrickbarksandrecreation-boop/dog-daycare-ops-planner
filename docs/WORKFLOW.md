@@ -21,6 +21,10 @@ For this iteration bookings are entered manually through **Dog database → Book
 - A stationary touch hold opens information. Movement of at least 8 CSS pixels, scrolling or pointer cancellation suppresses the touch click as well as cancelling the hold, across selection, arrival and information controls. The first touch within 150ms of scrolling is treated as stopping that scroll, without activating a card. Settled stationary taps and keyboard activation remain immediate. A separate grip starts drag, so dragging cannot trigger the information hold.
 - Right-click, double-click or the information button opens the same details on desktop. Keyboard users have select, destination, information and grip controls.
 
+## Group display sorting
+
+**Sort groups** is available in operations and Fit group. Choose **Colour** (Purple → Yellow → Green → Blue → White, with names alphabetical within each colour), **Alphabetical**, or **Manual order**. Additional colours follow the requested five; missing or invalid colours display/sort as White. The preference stays in this browser and applies to all groups in both views. New or updated dogs automatically take the appropriate position. Sorting does not move dogs between groups, change attendance, change Unassigned order, or overwrite saved manual positions. Choose Manual order for within-group drag reordering; cross-group drag and tap moves work in every mode.
+
 ## Attendance
 
 | State | Meaning | Active board |

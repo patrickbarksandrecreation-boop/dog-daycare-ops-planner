@@ -1,5 +1,11 @@
 # Implementation status
 
+## Group sorting selector (12 November 2026 Brisbane)
+
+Operations and **Fit group** share a **Sort groups** dropdown: Colour (Purple → Yellow → Green → Blue → White, alphabetical within each colour), Alphabetical, or Manual order. Other preset/custom colours follow the requested five. Missing/invalid colours use White. The browser remembers the selected display order. Both group views re-sort incoming snapshots automatically; Unassigned, assignments, attendance and saved manual positions are untouched. Same-group drag reordering is available in Manual order; cross-group drag/tap moves remain available in all modes.
+
+Validation: production build passed. Two unit tests cover colour priority, alphabetical ties, invalid/custom colours and immutability; three browser regressions cover both views, selection/count preservation, live name/colour/assignment updates, manual restoration and reload persistence. The existing 40-card viewport tests remain release gates. CI/deployment results are recorded in the release PR; physical-phone acceptance remains outstanding.
+
 ## Fit entire group on a phone (12 November 2026 Brisbane)
 
 Each group has a **Fit group** button opening a viewport-sized, read-only roster with only photo, disambiguated short name and abbreviated breed. Portrait uses five columns/eight rows for 40 dogs; landscape/wide screens use ten columns/four rows. Larger groups add rows within the available dynamic viewport. The date, group selector, dog total and refresh/offline status remain visible. **Back to operations** or Escape restores the operations board and focus; searches, selection, date and live subscriptions survive. The overview includes all active assigned dogs regardless of board search, excludes departures and preserves the board's ordering/colours. No data/schema/authentication changes.

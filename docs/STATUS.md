@@ -1,5 +1,11 @@
 # Implementation status
 
+## Fit entire group on a phone (12 November 2026 Brisbane)
+
+Each group has a **Fit group** button opening a viewport-sized, read-only roster with only photo, disambiguated short name and abbreviated breed. Portrait uses five columns/eight rows for 40 dogs; landscape/wide screens use ten columns/four rows. Larger groups add rows within the available dynamic viewport. The date, group selector, dog total and refresh/offline status remain visible. **Back to operations** or Escape restores the operations board and focus; searches, selection, date and live subscriptions survive. The overview includes all active assigned dogs regardless of board search, excludes departures and preserves the board's ordering/colours. No data/schema/authentication changes.
+
+Validation before publication: production build, Edge type check and all 137 unit/PostgreSQL tests passed. Added nine browser tests covering 40 fully visible cards at seven viewport sizes from 320×568 to desktop, return navigation, preserved search/selection, live departures, empty groups and offline status. Local browser-test launch is blocked by the executor's Unix-socket restriction; GitHub CI is the release gate. Shared-browser visual review completed. Hosted deployment and CI results are recorded in the release PR; physical-phone acceptance remains outstanding.
+
 ## Mobile scroll protection and retained source group — local follow-up (11 November 2026 Brisbane)
 
 Reproduced short 10px touch drags selecting a dog at 360/390/430px. Card-wide gesture tracking now suppresses selection, arrival and information clicks after movement, cancellation, or a touch used to stop recent scrolling. Intentional stationary taps/holds, keyboard and explicit grip drag remain. Browser tap flashes no longer resemble selection.

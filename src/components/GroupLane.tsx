@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { AlertTriangle, Pencil } from 'lucide-react';
-export function GroupLane({ id, name, present, planned, order, selected, dragging, destination, rename, editor, children, warnings, runSelector, showWarnings }: {
+export function GroupLane({ id, name, present, planned, order, selected, dragging, destination, rename, editor, children, warnings, runSelector, showWarnings, overview }: {
   id: string; name: string; present: number; planned: number; order: number;
   selected: boolean; dragging: boolean; destination: () => void;
   rename?: () => void; editor?: ReactNode; children: ReactNode; warnings: { severity: 'present' | 'planned'; level?: 'hard' | 'soft' }[];
+  overview?: () => void;
   runSelector?: ReactNode; showWarnings?: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
@@ -24,6 +25,7 @@ export function GroupLane({ id, name, present, planned, order, selected, draggin
       </button>
       {rename && <button className="icon-button" onClick={rename} aria-label={`Rename ${name}`}><Pencil size={15}/></button>}
       {runSelector}
+      {overview && <button className="group-overview-button" data-overview-group={id} aria-label={`Fit ${name} on screen`} onClick={overview}>Fit group</button>}
     </header>
     <div className={`warning-bar ${red ? 'live-warning' : warnings.length ? 'planned-warning' : 'no-warnings'}`} data-testid={`warnings-${id}`}>
       {warnings.length > 0 && <button className="warning-details" onClick={showWarnings} aria-label={`View warnings for ${name}`}><AlertTriangle size={15}/><span>{hard > 0 && `${hard} Hard · Must not mix. `}{soft > 0 && `${soft} Soft · Monitor closely. `}{live > 0 && `${live} present conflict${live > 1 ? 's' : ''}`}{live > 0 && potential > 0 && ' · '}{potential > 0 && `${potential} planned conflict${potential > 1 ? 's' : ''}`}</span></button>}

@@ -1,5 +1,23 @@
 # Implementation status
 
+## Mobile scroll protection and retained source group — local follow-up (11 November 2026 Brisbane)
+
+Reproduced short 10px touch drags selecting a dog at 360/390/430px. Card-wide gesture tracking now suppresses selection, arrival and information clicks after movement, cancellation, or a touch used to stop recent scrolling. Intentional stationary taps/holds, keyboard and explicit grip drag remain. Browser tap flashes no longer resemble selection.
+
+All move routes keep the active group/Unassigned view, including drag-to-tab and profile moves. A tab manually chosen during saving is also preserved. Destination counts and pending saves continue to update normally.
+
+Verification: 12 new native-touch tests, five new source-view tests and the existing workflows passed: **86 browser tests covered across suite/focused runs**, plus production build. Latest five-sample median move feedback is **74ms / 98ms** for 200ms/800ms snapshots; confirmed save **397ms / 1,038ms**. See [MOBILE-INTERACTIONS.md](MOBILE-INTERACTIONS.md) for screenshots, raw measurements and limits. No push, merge, deployment or hosted writes. Physical-device acceptance remains outstanding; owner review is next.
+
+## Handler UI and save responsiveness — local review (11 November 2026 Brisbane)
+
+Phone layouts put the active group first with 44px information/arrival controls, a fixed bottom selection tray and direct move destinations. Touch tablets use the same action sizes; desktop retains 90 complete cards at 1920×1080, with a stable selection toolbar and no stretched gap. A separate board-wide name/breed search locates dogs across groups. Empty dates open Unassigned automatically.
+
+Moves/attendance show immediate, version-preserving previews and lock only affected dogs until an authoritative reread. Independent dogs remain usable while saving. Failed/ambiguous responses reconcile without replay; offline/read failure hides previews until recovery. Existing settings/profile saves remain exclusive. Server constraints, authorization, RPCs and schema are unchanged.
+
+Paired local synthetic timings (five samples/case): move feedback **396→74ms** with a 200ms snapshot and **1,036→52ms** with an 800ms snapshot. Confirmed-save time remains essentially unchanged (**396→391ms**, **1,036→1,065ms**). These are frontend fixture measurements, not hosted or physical-device timings.
+
+Final verification: **137 unit/PostgreSQL tests**, **69 Chromium tests**, production build, Edge type checks and the PWA shell/offline check passed. Screenshots, raw timings, reproduced commands and limitations are in [UI-SPEED-REVIEW.md](UI-SPEED-REVIEW.md). Nothing pushed, merged, deployed or written to hosted data. Next: owner screenshot/speed review and explicit release approval; workplace-device/network acceptance remains outstanding.
+
 ## One-use desktop Petboost reconnect (5 November 2026 Brisbane)
 
 Adds `connect-session.mjs` and a production-only reconnect endpoint so the trusted desktop needs no `.env.petboost-setup` or copies of Netlify's write-only production secrets. An owner/service-issued 256-bit code is stored only as a SHA-256 hash, expires within 60 minutes and can replace the encrypted worker login once. Public/anonymous/staff roles cannot issue or inspect codes. Session replacement and code consumption are atomic; renewal invalidates prior verification and fences older workers. No endpoint returns the saved session or server keys.

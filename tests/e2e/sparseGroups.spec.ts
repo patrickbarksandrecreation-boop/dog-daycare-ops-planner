@@ -31,9 +31,12 @@ for (const mobile of [false, true]) test.describe(mobile ? 'mobile sparse dates'
         await page.getByLabel('Search dog database').fill(name);
         await page.getByRole('button', { name: `Book ${name} for day`, exact: true }).click();
         await page.getByRole('button', { name: 'Close dialog' }).click();
+        if (mobile) await page.getByRole('button', { name: 'View Unassigned', exact: true }).click();
         await page.getByRole('button', { name: `Select ${name}`, exact: true }).click();
         await page.getByLabel('Move selected dogs to', { exact: true }).selectOption('group-1');
+        if (mobile) await expect(page.getByRole('button', { name: 'View Unassigned', exact: true })).toHaveAttribute('aria-current', 'page');
       }
+      if (mobile) await page.getByRole('button', { name: 'View Group 1', exact: true }).click();
       await checkTile();
     }
 
@@ -56,6 +59,10 @@ for (const mobile of [false, true]) test.describe(mobile ? 'mobile sparse dates'
       await expect(page.locator('.dog-card.dragging')).toHaveCount(1);
       await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 18 });
       await page.mouse.up();
+    }
+    if (mobile) {
+      await expect(page.getByRole('button', { name: 'View Group 1', exact: true })).toHaveAttribute('aria-current', 'page');
+      await page.getByRole('button', { name: 'View Group 2', exact: true }).click();
     }
     await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toBeVisible();
     await checkTile();

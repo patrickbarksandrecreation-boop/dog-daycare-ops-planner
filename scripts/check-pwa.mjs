@@ -9,7 +9,7 @@ try {
     server.stdout.on('data',chunk=>{if(chunk.toString().includes('4173')){clearTimeout(timer);resolve();}});
     server.on('exit',code=>{clearTimeout(timer);reject(new Error(`Preview exited with ${code}`));});
   });
-  browser=await chromium.launch();
+  browser=await chromium.launch({ executablePath: process.env.PLANNER_CHROMIUM_PATH || undefined });
   const context=await browser.newContext(); const page=await context.newPage();
   page.on('pageerror',error=>console.error('Browser error:',error.message));
   page.on('console',message=>{if(message.type()==='error')console.error('Browser console:',message.text());});
@@ -25,6 +25,12 @@ try {
   await context.setOffline(true); await page.reload();
   try { await page.getByRole('button',{name:'Explore the demo'}).waitFor({timeout:10000}); }
   catch(error){console.error('Offline page:',await page.locator('body').innerText());throw error;}
-  assert.equal(await page.evaluate(()=>navigator.onLine),false);
+  // Check actual network failure: some Chromium revisions reset navigator.onLine
+  // after a service-worker navigation even while the context remains offline.
+  const networkBlocked=await page.evaluate(async()=>{
+    try { await fetch(`/offline-probe-${crypto.randomUUID()}`,{cache:'no-store'}); return false; }
+    catch { return true; }
+  });
+  assert.equal(networkBlocked,true,'An uncached request must fail during the offline shell check');
   console.log('PASS: production PWA registers, precaches its shell/assets/icons and reloads offline without caching private records.');
 } finally { await browser?.close(); server.kill(); }

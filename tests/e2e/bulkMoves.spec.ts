@@ -8,6 +8,11 @@ async function demo(page: Page) {
   await expect(page.getByTestId('booked-count')).toHaveText('100');
 }
 const select = (page: Page, name: string) => page.getByRole('button', { name: `Select ${name}`, exact: true });
+async function tapSelect(page: Page, name: string) {
+  await select(page, name).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(180); // A deliberate tap after scrolling has settled.
+  await select(page, name).tap();
+}
 const count = (page: Page, n: number) => expect(page.getByTestId('selection-count')).toContainText(`${n} selected`);
 
 test('desktop toggles across lanes, bulk destinations preserve attendance and controls preserve other selections', async ({ page }) => {
@@ -54,13 +59,14 @@ test('desktop toggles across lanes, bulk destinations preserve attendance and co
 test('mobile tabs switch views without moving or clearing selection and chooser stays reachable', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await context.newPage(); await demo(page);
-  await select(page, 'Alfie').tap();
+  await tapSelect(page, 'Alfie');
   await page.getByRole('button', { name: 'View Group 2', exact: true }).tap();
-  await select(page, 'Hazel Acorn').tap(); await count(page, 2);
+  await tapSelect(page, 'Hazel Acorn'); await count(page, 2);
   await page.getByRole('button', { name: 'View Group 3', exact: true }).tap();
-  await select(page, 'Alfie Dune').tap();
+  await tapSelect(page, 'Alfie Dune');
+  await page.getByRole('button', { name: 'View Unassigned', exact: true }).tap();
   await page.getByLabel('Search unassigned dogs').fill('Winston Dune');
-  await select(page, 'Winston Dune').tap(); await count(page, 4);
+  await tapSelect(page, 'Winston Dune'); await count(page, 4);
   await page.getByRole('button', { name: 'View Group 1', exact: true }).tap();
   await expect(select(page, 'Alfie')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('counts-group-1')).toHaveText('10 present / 30 planned');
@@ -71,6 +77,8 @@ test('mobile tabs switch views without moving or clearing selection and chooser 
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: 'docs/screenshots/bulk-selection-mobile.png', fullPage: true });
   await page.getByLabel('Move selected dogs to', { exact: true }).selectOption('group-2');
+  await expect(page.getByRole('button', { name: 'View Group 1', exact: true })).toHaveAttribute('aria-current', 'page');
+  await page.getByRole('button', { name: 'View Group 2', exact: true }).tap();
   for (const name of ['Alfie', 'Hazel Acorn', 'Alfie Dune', 'Winston Dune']) {
     await expect(page.getByTestId('lane-group-2').getByTestId(`card-${name}`)).toBeVisible();
   }
@@ -97,8 +105,8 @@ test('remote refresh keeps captured versions and rejects an entire stale batch',
   expect(await page.evaluate(() => (window as any).control.writes)).toBe(1);
 });
 
-for (const ambiguous of [false, true]) test(`${ambiguous ? 'lost response' : 'failed request'} reconciles without retries and gates offline/saving edits`, async ({ page, context }) => {
-  await page.goto('/tests/fixtures/loading.html?photoDelay=1&readDelay=500');
+for (const ambiguous of [false, true]) test(`${ambiguous ? 'lost response' : 'failed request'} reconciles without retries and locks only pending dogs while saving`, async ({ page, context }) => {
+  await page.goto('/tests/fixtures/loading.html?photoDelay=1&readDelay=500&writeDelay=1000');
   await expect(select(page, 'Alfie')).toBeEnabled();
   await select(page, 'Alfie').click(); await select(page, 'Archie').click();
   await context.setOffline(true);
@@ -111,8 +119,10 @@ for (const ambiguous of [false, true]) test(`${ambiguous ? 'lost response' : 'fa
     const c = (window as any).control; c.ambiguous = value; c.failWrite = !value;
   }, ambiguous);
   await page.getByLabel('Move selected dogs to', { exact: true }).selectOption('group-1');
-  await expect(page.getByLabel('Move selected dogs to', { exact: true })).toBeDisabled();
-  await expect(select(page, 'Bella')).toBeDisabled();
+  await expect(page.getByLabel('Move selected dogs to', { exact: true })).toHaveCount(0);
+  await expect(select(page, 'Alfie')).toBeDisabled();
+  await expect(select(page, 'Archie')).toBeDisabled();
+  await expect(select(page, 'Bella')).toBeEnabled();
   await expect(page.getByRole('alert')).toContainText(ambiguous ? 'Response lost' : 'Another staff member');
   await expect(page.getByTestId(ambiguous ? 'lane-group-1' : 'lane-unassigned').getByTestId('card-Alfie')).toBeVisible();
   await expect(page.locator('.connection')).toHaveText('Live · saved');

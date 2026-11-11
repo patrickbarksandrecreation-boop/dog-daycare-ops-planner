@@ -9,7 +9,7 @@ async function open(page: import('@playwright/test').Page, scenario='planned') {
 const geometry = (page: import('@playwright/test').Page) => page.evaluate(() => {
   const panels=[...document.querySelectorAll<HTMLElement>('[data-panel-id]')];
   return panels.map(p=>{const r=p.getBoundingClientRect(); const cards=[...p.querySelectorAll('.dog-card')].map(c=>c.getBoundingClientRect()); const grid=p.querySelector('.group-grid,.unassigned-cards')!;
-    return {id:p.dataset.panelId,width:r.width,left:r.left,right:r.right,height:r.height,bottom:r.bottom,columns:new Set(cards.map(c=>Math.round(c.left))).size,allInside:cards.every(c=>c.bottom<=r.bottom&&c.left>=r.left&&c.right<=r.right),overflow:getComputedStyle(grid).overflowY};});
+    return {id:p.dataset.panelId,width:r.width,left:r.left,right:r.right,height:r.height,top:r.top,bottom:r.bottom,columns:new Set(cards.map(c=>Math.round(c.left))).size,allInside:cards.every(c=>c.bottom<=r.bottom&&c.left>=r.left&&c.right<=r.right),overflow:getComputedStyle(grid).overflowY};});
 });
 test('desktop pointer resizing redistributes space, wraps cards and retains every dog',async({page})=>{
   await open(page);
@@ -70,6 +70,8 @@ test('desktop resize preferences do not affect mobile tabs and vertical unassign
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.getByRole('button',{name:'Select Archie',exact:true}).click();
   await page.getByLabel('Move selected dogs to',{exact:true}).selectOption('group-2');
+  await expect(page.getByRole('button',{name:'View Group 1',exact:true})).toHaveAttribute('aria-current','page');
+  await page.getByRole('button',{name:'View Group 2',exact:true}).click();
   await expect(page.getByTestId('lane-group-2').getByTestId('card-Archie')).toBeVisible();
 });
 
@@ -82,7 +84,11 @@ test('extreme resizing and smaller desktop windows preserve bounds and card plac
     await page.setViewportSize({width,height:1080});
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     const panels=await geometry(page); expect(panels.every(p=>p.allInside)).toBe(true);
-    for(let i=1;i<panels.length;i++) expect(panels[i].left).toBeGreaterThanOrEqual(panels[i-1].right);
+    // Tablet panels wrap onto rows; every pair must remain disjoint in either axis.
+    for (let i=0; i<panels.length; i++) for (let j=i+1; j<panels.length; j++) {
+      const a=panels[i], b=panels[j];
+      expect(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top).toBe(true);
+    }
     await expect(page.locator('.dog-card')).toHaveCount(100);
   }
 });

@@ -1,0 +1,41 @@
+[
+  {
+    "name": "desktop",
+    "width": 1920,
+    "height": 1080,
+    "complete_group_cards": 90,
+    "first_card_y": 339,
+    "card_height": 66,
+    "info_target": {
+      "width": 20,
+      "height": 20
+    },
+    "horizontal_overflow": false
+  },
+  {
+    "name": "mobile",
+    "width": 390,
+    "height": 844,
+    "complete_group_cards": 9,
+    "first_card_y": 357,
+    "card_height": 126,
+    "info_target": {
+      "width": 44,
+      "height": 44
+    },
+    "horizontal_overflow": false
+  },
+  {
+    "name": "tablet",
+    "width": 768,
+    "height": 1024,
+    "complete_group_cards": 15,
+    "first_card_y": 339,
+    "card_height": 126,
+    "info_target": {
+      "width": 44,
+      "height": 44
+    },
+    "horizontal_overflow": false
+  }
+]

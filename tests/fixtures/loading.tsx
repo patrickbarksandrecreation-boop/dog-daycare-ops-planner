@@ -46,7 +46,7 @@ const db = {
       await pause(Number(params.get('readDelay') || 200));
       return control.fail ? { error: { message: 'Injected read failure' } } : { data: copy };
     }
-    control.writes++; await pause(150);
+  control.writes++; await pause(Number(params.get('writeDelay') || 150));
     if (control.failWrite) return { error: { message: 'Another staff member changed this record' } };
     if (name === 'move_assignments') {
       const rows = args.p_assignments.map((s: any) => control.state.assignments.find(a => a.id === s.id));

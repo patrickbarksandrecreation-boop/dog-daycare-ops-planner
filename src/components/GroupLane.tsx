@@ -25,13 +25,13 @@ export function GroupLane({ id, name, present, planned, order, selected, draggin
       {rename && <button className="icon-button" onClick={rename} aria-label={`Rename ${name}`}><Pencil size={15}/></button>}
       {runSelector}
     </header>
-    <div className={`warning-bar ${red ? 'live-warning' : warnings.length ? 'planned-warning' : ''}`} data-testid={`warnings-${id}`}>
-      {warnings.length > 0 ? <button className="warning-details" onClick={showWarnings} aria-label={`View warnings for ${name}`}><AlertTriangle size={15}/><span>{hard > 0 && `${hard} Hard · Must not mix. `}{soft > 0 && `${soft} Soft · Monitor closely. `}{live > 0 && `${live} present conflict${live > 1 ? 's' : ''}`}{live > 0 && potential > 0 && ' · '}{potential > 0 && `${potential} planned conflict${potential > 1 ? 's' : ''}`}</span></button> : <span className="warning-placeholder">Interaction & run alerts</span>}
+    <div className={`warning-bar ${red ? 'live-warning' : warnings.length ? 'planned-warning' : 'no-warnings'}`} data-testid={`warnings-${id}`}>
+      {warnings.length > 0 && <button className="warning-details" onClick={showWarnings} aria-label={`View warnings for ${name}`}><AlertTriangle size={15}/><span>{hard > 0 && `${hard} Hard · Must not mix. `}{soft > 0 && `${soft} Soft · Monitor closely. `}{live > 0 && `${live} present conflict${live > 1 ? 's' : ''}`}{live > 0 && potential > 0 && ' · '}{potential > 0 && `${potential} planned conflict${potential > 1 ? 's' : ''}`}</span></button>}
     </div>
     {editor}
     <div className="group-grid">{children}</div>
     {planned === 0 && <button className="empty-group" disabled={!selected} onClick={destination}>
-      {selected ? 'Move selected dogs here' : 'Drop dogs here, or select a dog then this group'}
+      {selected ? 'Move selected dogs here' : 'Select dogs to plan this group'}
     </button>}
   </section>;
 }

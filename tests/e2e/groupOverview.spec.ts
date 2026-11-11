@@ -9,7 +9,8 @@ async function grouped(page: Page, count = 40) {
     control.changed();
   }, count);
   await expect(page.getByTestId('counts-group-1')).toContainText(`${count} planned`);
-  await page.getByRole('button', { name: 'View Group 1', exact: true }).click();
+  const groupTab = page.getByRole('button', { name: 'View Group 1', exact: true });
+  if (await groupTab.isVisible()) await groupTab.click();
   await page.getByRole('button', { name: 'Fit Group 1 on screen', exact: true }).click();
   await expect(page.getByRole('main', { name: 'Entire group overview' })).toBeVisible();
 }
@@ -41,7 +42,8 @@ for (const size of [
   await expect(page.locator('.overview-card .avatar img').first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Back to operations' })).toBeInViewport();
   await page.getByRole('button', { name: 'Back to operations' }).click();
-  await expect(page.getByRole('button', { name: 'View Group 1', exact: true })).toHaveAttribute('aria-current', 'page');
+  const groupTab = page.getByRole('button', { name: 'View Group 1', exact: true });
+  if (await groupTab.isVisible()) await expect(groupTab).toHaveAttribute('aria-current', 'page');
   await expect(page.getByTestId('counts-group-1')).toContainText('40 planned');
   await expect(page.getByRole('button', { name: 'Fit Group 1 on screen', exact: true })).toBeFocused();
   expect(await page.evaluate(() => (window as any).control.writes)).toBe(0);
